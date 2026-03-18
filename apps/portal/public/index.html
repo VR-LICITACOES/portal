@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="I.R.-COMERCIO-E-MATERIAIS-ELETRICOS-LTDA.png">
+    <title>Portal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- ── LOGIN ── -->
+    <div id="loginScreen" class="login-screen">
+
+        <div class="login-line login-line-h"></div>
+        <div class="login-line login-line-h"></div>
+        <div class="login-line login-line-h"></div>
+        <div class="login-line login-line-v"></div>
+        <div class="login-line login-line-v"></div>
+        <div class="login-line login-line-v"></div>
+
+        <div class="login-card">
+        <div class="login-form-area">
+
+            <div id="messageBox" class="message"></div>
+
+            <div class="login-logo-wrapper">
+                <img src="I.R.PRETO.png"  alt="IR Comércio e Materiais Elétricos" class="login-logo-light">
+                <img src="I.R.BRANCO.png" alt="IR Comércio e Materiais Elétricos" class="login-logo-dark">
+            </div>
+            <div class="login-portal-headline">IDENTIFIQUE-SE PARA CONTINUAR</div>
+
+            <div class="login-fields">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Usuário</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                            </span>
+                            <input type="text" id="username" name="username" required autofocus
+                                   placeholder="Digite seu usuário" autocomplete="username" style="padding-left:2.6rem;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <div class="password-container input-icon-wrapper">
+                            <span class="input-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <input type="password" id="password" name="password" required
+                                   placeholder="Digite sua senha" autocomplete="current-password" style="padding-left:2.6rem;">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">MOSTRAR</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login" id="loginBtn">ENTRAR</button>
+                </form>
+            </div>
+        </div>
+        </div><!-- /.login-card -->
+
+        <div class="login-version-footer">© 2026 IR<span style="color: rgba(255, 140, 60, 0.55);">2</span> COMÉRCIO E MATERIAIS ELÉTRICOS LTDA &nbsp;·&nbsp; USO INTERNO</div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div id="dashboardScreen" class="dashboard-screen">
+
+        <div class="splash-welcome" id="splashWelcome">
+            <div class="splash-spinner"></div>
+        </div>
+
+        <button class="logout-btn-floating" id="logoutFloatingBtn" onclick="showLogoutModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Sair
+        </button>
+
+        <div class="dashboard-container">
+
+            <div id="sidebar" class="sidebar">
+                <div class="sidebar-header">
+                    <div class="user-initial-circle" id="userInitial"></div>
+                    <div class="sidebar-title">
+                        <div class="user-name-sidebar" id="sidebarUserName"></div>
+                        <div class="user-sector-sidebar" id="sidebarUserSector"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-modules" id="sidebarModules"></div>
+
+                <div class="sidebar-footer">
+                    <button class="logout-btn-footer" onclick="showLogoutModal()">
+                        <span class="logout-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                        </span>
+                        <span class="logout-label">Sair</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-area">
+                    <div id="welcomeScreen" class="welcome-screen">
+                        <div class="welcome-header">
+                            <div class="welcome-greeting-text" id="welcomeGreeting"></div>
+                            <div class="welcome-title">Selecione um módulo para começar</div>
+                        </div>
+                        <div id="welcomeModulesGrid" class="welcome-modules-grid"></div>
+                    </div>
+
+                    <div id="iframesContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LOGOUT -->
+    <div class="modal-overlay" id="logoutModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeLogoutModal()">✕</button>
+            <div class="modal-message-logout">Deseja realmente sair?</div>
+            <div class="modal-actions">
+                <button type="button" onclick="confirmLogout()" class="danger">Sim</button>
+                <button type="button" onclick="closeLogoutModal()" class="secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
