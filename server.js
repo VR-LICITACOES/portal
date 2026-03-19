@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3000;
 // Trust proxy (necessário atrás do Render)
 app.set('trust proxy', true);
 
-// Servir arquivos estáticos do portal (index.html, css, js, imagens)
-app.use(express.static(path.join(__dirname, 'apps', 'portal', 'public')));
+// ✅ Servir arquivos estáticos da pasta apps/portal (sem /public)
+app.use(express.static(path.join(__dirname, 'apps', 'portal')));
 
 // Middlewares
 app.use(cors());
@@ -23,12 +23,12 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Rate limiter com validação desabilitada (para não exibir warning)
+// Rate limiter com validação desabilitada (para não exibir warnings)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: 'Muitas tentativas, tente novamente mais tarde.' },
-  validate: false // desliga todas as validações
+  validate: false
 });
 
 // ========== ROTAS DE API ==========
@@ -62,7 +62,7 @@ app.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    // Comparação direta (senha em texto plano)
+    // 🔓 Comparação direta (senha em texto plano)
     if (password !== user.password) {
       console.log(`❌ Senha incorreta para: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -141,14 +141,13 @@ app.post('/api/logout', async (req, res) => {
 });
 
 // ========== ROTAS PARA AS APPS (front-ends) ==========
-// (opcional, se você for criar outras pastas para as apps)
-app.use('/licitacoes', express.static(path.join(__dirname, 'apps', 'licitacoes', 'public')));
-app.use('/compra', express.static(path.join(__dirname, 'apps', 'compra', 'public')));
-// ... adicione as demais
+// Exemplo (adicione conforme necessário):
+// app.use('/licitacoes', express.static(path.join(__dirname, 'apps', 'licitacoes')));
 
-// Rota curinga: para qualquer outra rota, serve o index.html do portal (SPA)
+// ========== ROTA CURINGA ==========
+// Para qualquer outra rota, serve o index.html do portal (SPA)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'apps', 'portal', 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html'));
 });
 
 // Inicia o servidor
