@@ -1,27 +1,23 @@
-// Detecta automaticamente o caminho base (ex: '/portal' ou vazio)
-const basePath = window.location.pathname.split('/').slice(0, 2).join('/'); // ex: '/portal'
-const API_URL = window.location.origin + basePath + '/api';
-
-console.log('🌐 API_URL:', API_URL);
+const API_URL = window.location.origin + '/api';
 
 /* ── PERMISSÕES ── */
 const SECTOR_PERMISSIONS = {
-    'Administrador': ['usuarios', 'pregões','precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','receber','vendas','pagamento','lucro-real', 'financeiro', 'comercial'],
-    'Vendas':        ['pregões','precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial'],
+    'Administrador': ['usuarios', 'pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','receber','vendas','pagamento','lucro-real', 'financeiro', 'comercial'],
+    'Vendas':        ['pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial'],
     'Financeiro':    ['pregões','transportadoras','faturamento','controle-frete','receber','pagamento','comercial'],
     'Almoxarifado':  ['transportadoras','cotacoes-frete','faturamento', 'estoque', 'controle-frete','comercial'],
 };
 
 const USER_SPECIFIC_PERMISSIONS = {
-    'vendas2':    ['pregões','precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial', 'vendas-miguel'],
-    'vendas':     ['pregões','precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial', 'vendas-isaque'],
+    'vendas2':    ['pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial', 'vendas-miguel'],
+    'vendas':     ['pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial', 'vendas-isaque'],
 };
 
 /* ── ÍCONES ── */
 const MODULE_ICONS = {
     'usuarios':         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-cog-icon lucide-user-cog"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg>',
     'pregões':          '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-8.381 8.38a 1 1 0 0 1-3.001-3l8.384-8.381"/><path d="m16 16 6-6"/><path d="m21.5 10.5-8-8"/><path d="m8 8 6-6"/><path d="m8.5 7.5 8 8"/></svg>',
-    'precos':           '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 13H7"/><path d="M19 9h-4"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="15" y="5" width="4" height="12" rx="1"/><rect x="7" y="8" width="4" height="9" rx="1"/></svg>',
+    'tabela-precos':    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 13H7"/><path d="M19 9h-4"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="15" y="5" width="4" height="12" rx="1"/><rect x="7" y="8" width="4" height="9" rx="1"/></svg>',
     'compra':           '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
     'transportadoras':  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>',
     'cotacoes-frete':   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/><circle cx="18.5" cy="15.5" r="2.5"/><path d="M20.27 17.27 22 19"/></svg>',
@@ -42,8 +38,8 @@ const MODULE_ICONS = {
 const MODULES = [
     { id: 'usuarios',       name: 'Controle de Acesso',    url: 'https://usu-rios.onrender.com',             available: true },
     { id: 'pregões',        name: 'Pregões',               url: 'https://pregoes.onrender.com',              available: true  },
-    { id: 'precos',         name: 'Tabela de Preços',      url: '/precos',                                   available: true  }, // local
-    { id: 'compra',         name: 'Ordens de Compra',      url: '/compra',                                   available: true  }, // local
+    { id: 'tabela-precos',  name: 'Tabela de Preços',      url: 'https://tabela-precos-udyp.onrender.com',   available: true  },
+    { id: 'compra',         name: 'Ordens de Compra',      url: 'https://ordem-compra.onrender.com',         available: true  },
     { id: 'transportadoras',name: 'Transportadoras',       url: 'https://transportadoras.onrender.com',      available: true  },
     { id: 'cotacoes-frete', name: 'Cotações de Frete',     url: 'https://cotacoes-frete-aikc.onrender.com',  available: true  },
     { id: 'faturamento',    name: 'Pedidos de Faturamento',url: 'https://pedido-faturamento.onrender.com',   available: true  },
