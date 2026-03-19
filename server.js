@@ -4,21 +4,18 @@ const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy (necessário atrás do Render)
 app.set('trust proxy', true);
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Configuração do Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// ========== ROTAS DE ARQUIVOS ESTÁTICOS DAS APPS ==========
+// ========== ARQUIVOS ESTÁTICOS DAS APPS ==========
 
 // Portal (raiz)
 app.use(express.static(path.join(__dirname, 'apps', 'portal', 'public')));
@@ -26,7 +23,23 @@ app.use(express.static(path.join(__dirname, 'apps', 'portal', 'public')));
 // App Preços (rota /precos)
 app.use('/precos', express.static(path.join(__dirname, 'apps', 'precos', 'public')));
 
-// ========== MIDDLEWARE DE AUTENTICAÇÃO (usado nas rotas de API) ==========
+// ========== CONFIGURAÇÃO SUPABASE ==========
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ========== RATE LIMITER ==========
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Muitas tentativas, tente novamente mais tarde.' },
+  validate: false
+});
+
+// ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
+
 async function authenticate(req, res, next) {
   const sessionToken = req.headers['x-session-token'] || req.query.sessionToken;
   if (!sessionToken) {
@@ -45,7 +58,7 @@ async function authenticate(req, res, next) {
       return res.status(401).json({ error: 'Sessão inválida ou expirada' });
     }
 
-    req.user = session.users; // anexa o usuário para uso posterior, se necessário
+    req.user = session.users;
     next();
   } catch (err) {
     console.error('Erro na autenticação:', err);
@@ -53,9 +66,114 @@ async function authenticate(req, res, next) {
   }
 }
 
-// ========== ROTAS DE API DO PORTAL (já existentes) ==========
-// ... (manter as rotas /api/login, /api/verify-session, /api/logout, /api/ip)
-// Para brevidade, não repetirei aqui, mas elas devem permanecer no código.
+// ========== ROTAS DE API DO PORTAL ==========
+
+// Rota para obter IP público
+app.get('/api/ip', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  res.json({ ip });
+});
+
+// Rota de login
+app.post('/api/login', limiter, async (req, res) => {
+  const { username, password, deviceToken } = req.body;
+
+  try {
+    console.log(`🔐 Tentativa de login: ${username}`);
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, username, password, name, is_admin, sector, apps, is_active')
+      .eq('username', username.toLowerCase())
+      .single();
+
+    if (error || !user) {
+      console.log(`❌ Usuário não encontrado: ${username}`);
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
+
+    if (!user.is_active) {
+      console.log(`❌ Usuário inativo: ${username}`);
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
+
+    // 🔓 Comparação direta (senha em texto plano)
+    if (password !== user.password) {
+      console.log(`❌ Senha incorreta para: ${username}`);
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
+
+    const sessionToken = require('crypto').randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    const { error: sessionError } = await supabase
+      .from('sessions')
+      .insert({
+        session_token: sessionToken,
+        user_id: user.id,
+        device_token: deviceToken,
+        ip_address: ipAddress,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (sessionError) {
+      console.error('❌ Erro ao criar sessão:', sessionError);
+      return res.status(500).json({ error: 'Erro interno ao criar sessão' });
+    }
+
+    res.json({
+      success: true,
+      session: {
+        username: user.username,
+        name: user.name,
+        is_admin: user.is_admin,
+        sector: user.sector,
+        apps: user.apps,
+        sessionToken,
+        deviceToken,
+        expiresAt
+      }
+    });
+  } catch (err) {
+    console.error('❌ Erro inesperado:', err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
+  }
+});
+
+// Rota de verificação de sessão
+app.post('/api/verify-session', async (req, res) => {
+  const { sessionToken } = req.body;
+  try {
+    const { data: session, error } = await supabase
+      .from('sessions')
+      .select('*, users(*)')
+      .eq('session_token', sessionToken)
+      .gte('expires_at', new Date().toISOString())
+      .single();
+    if (error || !session) return res.json({ valid: false });
+    res.json({ valid: true, user: session.users });
+  } catch {
+    res.json({ valid: false });
+  }
+});
+
+// Rota de logout
+app.post('/api/logout', async (req, res) => {
+  const { sessionToken, deviceToken } = req.body;
+  try {
+    await supabase
+      .from('sessions')
+      .delete()
+      .eq('session_token', sessionToken)
+      .eq('device_token', deviceToken);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Erro ao fazer logout' });
+  }
+});
 
 // ========== ROTAS DE API DA APLICAÇÃO PREÇOS ==========
 
@@ -192,12 +310,25 @@ app.delete('/api/precos/:id', authenticate, async (req, res) => {
   }
 });
 
-// ========== ROTA CURINGA PARA O PORTAL (SPA) ==========
+// ========== ROTAS DAS APPS (front-ends) ==========
+
+// Rota raiz: serve o index.html do portal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'apps', 'portal', 'public', 'index.html'));
 });
 
-// Inicia o servidor
+// Rota para a app Preços (caso alguém acesse /precos sem o index)
+app.get('/precos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'apps', 'precos', 'public', 'index.html'));
+});
+
+// ========== ROTA CURINGA PARA O PORTAL (SPA) ==========
+// Qualquer rota não reconhecida cai aqui
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'apps', 'portal', 'public', 'index.html'));
+});
+
+// ========== INICIA O SERVIDOR ==========
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
