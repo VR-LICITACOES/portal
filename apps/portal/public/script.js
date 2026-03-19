@@ -1,6 +1,5 @@
 const API_URL = window.location.origin + '/api';
 
-/* ── MÓDULOS com URLs relativas (agora apontam para as rotas do monorepo) ── */
 const MODULES = [
     { id: 'usuarios',       name: 'Controle de Acesso',    url: '/usuarios',             available: true },
     { id: 'pregões',        name: 'Pregões',               url: '/pregoes',              available: true  },
@@ -20,6 +19,8 @@ const MODULES = [
     { id: 'financeiro',     name: 'Financeiro',            url: '',                      available: false },
     { id: 'comercial',      name: 'Comercial',             url: '',                      available: false }
 ];
+
+// ... (restante do script igual ao anterior, com MODULE_ICONS e funções)
 
 /* ── ÍCONES (igual ao anterior) ── */
 const MODULE_ICONS = {
