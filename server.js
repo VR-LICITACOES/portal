@@ -36,7 +36,7 @@ app.post('/api/login', limiter, async (req, res) => {
     console.log(`\n🔐 Tentativa de login: ${username}`);
     console.log(`Senha fornecida: '${password}'`);
 
-    // 🔍 Lista todos os usuários para depuração
+    // 🔍 1. Lista TODOS os usuários da tabela
     const { data: allUsers, error: allError } = await supabase
       .from('users')
       .select('username, password');
@@ -44,11 +44,15 @@ app.post('/api/login', limiter, async (req, res) => {
     if (allError) {
       console.error('❌ Erro ao listar usuários:', allError);
     } else {
-      console.log('📋 Usuários no banco:');
-      allUsers.forEach(u => console.log(`   - ${u.username} : senha '${u.password}'`));
+      console.log('📋 Usuários encontrados no banco:');
+      if (allUsers.length === 0) {
+        console.log('   Nenhum usuário cadastrado!');
+      } else {
+        allUsers.forEach(u => console.log(`   - ${u.username} : senha '${u.password}'`));
+      }
     }
 
-    // Consulta específica
+    // 🔍 2. Consulta específica
     const { data: user, error } = await supabase
       .from('users')
       .select('id, username, password, name, is_admin, sector, apps, is_active')
@@ -56,15 +60,17 @@ app.post('/api/login', limiter, async (req, res) => {
       .single();
 
     if (error) {
-      console.log(`❌ Erro na consulta: ${error.message}`);
+      console.log(`❌ Erro na consulta específica: ${error.message}`);
     }
 
     if (!user) {
-      console.log(`❌ Usuário '${username.toLowerCase()}' não encontrado.`);
+      console.log(`❌ Usuário '${username.toLowerCase()}' NÃO encontrado.`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    console.log(`✅ Usuário encontrado: ${user.username}, senha no banco: '${user.password}'`);
+    console.log(`✅ Usuário encontrado: ${user.username}`);
+    console.log(`   Senha no banco: '${user.password}'`);
+    console.log(`   Senha fornecida: '${password}'`);
 
     if (!user.is_active) {
       console.log(`❌ Usuário inativo.`);
@@ -72,11 +78,12 @@ app.post('/api/login', limiter, async (req, res) => {
     }
 
     if (password !== user.password) {
-      console.log(`❌ Senha incorreta.`);
+      console.log(`❌ SENHA INCORRETA.`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    // Cria sessão...
+    console.log(`✅ Senha OK, criando sessão...`);
+
     const sessionToken = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
