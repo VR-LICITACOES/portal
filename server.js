@@ -24,7 +24,6 @@ function loadApp(route, appPath) {
   }
 }
 
-// Portal é obrigatório
 const portalPath = './apps/portal/server.js';
 if (!fs.existsSync(path.join(__dirname, portalPath))) {
   console.error('❌ ERRO: Portal não encontrado! Encerrando.');
@@ -34,20 +33,11 @@ const portalApp = require(portalPath);
 app.use('/', portalApp);
 console.log('✅ Portal carregado.');
 
-// Demais apps (opcionais)
-loadApp('/licitacoes', './apps/licitacoes/server.js');
-loadApp('/compra', './apps/compra/server.js');
-loadApp('/cotacoes', './apps/cotacoes/server.js');
-loadApp('/faturamento', './apps/faturamento/server.js');
-loadApp('/frete', './apps/frete/server.js');
-loadApp('/lucro', './apps/lucro/server.js');
-loadApp('/pagar', './apps/pagar/server.js');
-loadApp('/precos', './apps/precos/server.js');
-loadApp('/receber', './apps/receber/server.js');
-loadApp('/transportadoras', './apps/transportadoras/server.js');
-loadApp('/vendas', './apps/vendas/server.js');
+// Demais apps (opcionais) - descomente quando criar as pastas
+// loadApp('/licitacoes', './apps/licitacoes/server.js');
+// loadApp('/compra', './apps/compra/server.js');
+// ...
 
-// 404
 app.use((req, res) => {
   res.status(404).send('Página não encontrada');
 });
