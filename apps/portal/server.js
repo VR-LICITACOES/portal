@@ -32,7 +32,7 @@ router.post('/api/login', limiter, async (req, res) => {
   try {
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, password_hash, name, sector, permissions')
+      .select('id, username, password_hash, name, is_admin')
       .eq('username', username.toLowerCase())
       .single();
 
@@ -71,8 +71,7 @@ router.post('/api/login', limiter, async (req, res) => {
       session: {
         username: user.username,
         name: user.name,
-        sector: user.sector,
-        permissions: user.permissions,
+        is_admin: user.is_admin,
         sessionToken,
         deviceToken,
         expiresAt
