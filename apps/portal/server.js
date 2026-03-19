@@ -29,20 +29,29 @@ router.post('/api/login', limiter, async (req, res) => {
   const { username, password, deviceToken } = req.body;
 
   try {
+    console.log(`🔐 Tentativa de login: ${username}`);
+
+    // ⚠️ Verifique o nome da tabela: se for 'users', troque 'public_users' para 'users'
     const { data: user, error } = await supabase
-      .from('users')
+      .from('public_users')
       .select('id, username, password_hash, name, is_admin')
       .eq('username', username.toLowerCase())
       .single();
 
     if (error || !user) {
+      console.log(`❌ Usuário não encontrado: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
+    console.log(`👤 Usuário encontrado: ${user.username}, senha no banco: ${user.password_hash}`);
+
     // 🔓 COMPARAÇÃO DIRETA (senha em texto plano)
     if (password !== user.password_hash) {
+      console.log(`❌ Senha incorreta fornecida: ${password}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
+
+    console.log(`✅ Senha OK para: ${username}`);
 
     const sessionToken = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date();
@@ -61,7 +70,7 @@ router.post('/api/login', limiter, async (req, res) => {
       });
 
     if (sessionError) {
-      console.error('Erro ao criar sessão:', sessionError);
+      console.error('❌ Erro ao criar sessão:', sessionError);
       return res.status(500).json({ error: 'Erro interno ao criar sessão' });
     }
 
@@ -77,7 +86,7 @@ router.post('/api/login', limiter, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Erro no login:', err);
+    console.error('❌ Erro no login:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
@@ -88,7 +97,7 @@ router.post('/api/verify-session', async (req, res) => {
   try {
     const { data: session, error } = await supabase
       .from('sessions')
-      .select('*, users(*)')
+      .select('*, public_users(*)')
       .eq('session_token', sessionToken)
       .gte('expires_at', new Date().toISOString())
       .single();
@@ -97,7 +106,7 @@ router.post('/api/verify-session', async (req, res) => {
       return res.json({ valid: false });
     }
 
-    res.json({ valid: true, user: session.users });
+    res.json({ valid: true, user: session.public_users });
   } catch (err) {
     res.json({ valid: false });
   }
