@@ -14,10 +14,12 @@ router.use(cors());
 router.use(express.json());
 router.use(express.static(path.join(__dirname, 'public')));
 
+// ✅ Rate limiter com validação desabilitada para evitar erro com trust proxy
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { error: 'Muitas tentativas, tente novamente mais tarde.' }
+  message: { error: 'Muitas tentativas, tente novamente mais tarde.' },
+  validate: { trustProxy: false } // Desabilita a validação específica do trust proxy
 });
 
 router.get('/api/ip', (req, res) => {
@@ -37,14 +39,14 @@ router.post('/api/login', limiter, async (req, res) => {
     }
 
     const { data: user, error } = await supabase
-      .from('users') // Nome da tabela no Supabase (pode ser 'users' ou 'public_users')
+      .from('users')
       .select('id, username, password, name, is_admin, sector, apps, is_active')
       .eq('username', username.toLowerCase())
       .single();
 
     if (error) {
       console.error('❌ Erro na consulta:', error.message);
-      return res.status(500).json({ error: 'Erro interno no banco de dados' });
+      return res.status(500).json({ error: 'Erro interno no banco de dados: ' + error.message });
     }
 
     if (!user) {
