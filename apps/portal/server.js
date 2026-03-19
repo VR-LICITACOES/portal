@@ -6,7 +6,7 @@ const cors = require('cors');
 
 const router = express.Router();
 
-// Configurar trust proxy para que o rate limiter funcione atrás de proxy (Render)
+// ✅ Configura o trust proxy para o rate limiter funcionar atrás do Render
 router.set('trust proxy', true);
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -34,15 +34,15 @@ router.post('/api/login', limiter, async (req, res) => {
   try {
     console.log(`🔐 Tentativa de login: ${username}`);
 
-    // Verificar se as variáveis de ambiente estão configuradas
+    // ✅ Verifica se as variáveis de ambiente estão definidas
     if (!supabaseUrl || !supabaseKey) {
       console.error('❌ SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não definidas');
       return res.status(500).json({ error: 'Erro de configuração do servidor' });
     }
 
-    // Tabela: users (ou public_users, ajuste se necessário)
+    // ✅ Consulta na tabela users (se o nome for diferente, ajuste aqui)
     const { data: user, error } = await supabase
-      .from('users')  // <-- Verifique se este é o nome correto da tabela
+      .from('users')
       .select('id, username, password, name, is_admin, sector, apps, is_active')
       .eq('username', username.toLowerCase())
       .single();
@@ -57,7 +57,6 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    // Verifica se o usuário está ativo
     if (!user.is_active) {
       console.log(`❌ Usuário inativo: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -65,7 +64,7 @@ router.post('/api/login', limiter, async (req, res) => {
 
     console.log(`👤 Usuário encontrado: ${user.username}, senha no banco: ${user.password}`);
 
-    // 🔓 COMPARAÇÃO DIRETA
+    // 🔓 COMPARAÇÃO DIRETA (senha em texto plano)
     if (password !== user.password) {
       console.log(`❌ Senha incorreta. Fornecida: ${password}, Esperada: ${user.password}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -113,8 +112,7 @@ router.post('/api/login', limiter, async (req, res) => {
   }
 });
 
-// ... demais rotas (verify-session, logout, etc.) inalteradas ...
-
+// ✅ Rota de verificação de sessão
 router.post('/api/verify-session', async (req, res) => {
   const { sessionToken } = req.body;
   try {
@@ -131,6 +129,7 @@ router.post('/api/verify-session', async (req, res) => {
   }
 });
 
+// ✅ Rota de logout
 router.post('/api/logout', async (req, res) => {
   const { sessionToken, deviceToken } = req.body;
   try {
@@ -145,6 +144,7 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
+// ✅ Serve o front-end para qualquer outra rota
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
