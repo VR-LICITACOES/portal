@@ -17,6 +17,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Rate limiter sem validações
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -36,47 +37,32 @@ app.post('/api/login', limiter, async (req, res) => {
     console.log(`\n🔐 Tentativa de login: ${username}`);
     console.log(`Senha fornecida: '${password}'`);
 
-    // 🔍 1. Lista TODOS os usuários da tabela
-    const { data: allUsers, error: allError } = await supabase
-      .from('users')
-      .select('username, password');
-
-    if (allError) {
-      console.error('❌ Erro ao listar usuários:', allError);
-    } else {
-      console.log('📋 Usuários encontrados no banco:');
-      if (allUsers.length === 0) {
-        console.log('   Nenhum usuário cadastrado!');
-      } else {
-        allUsers.forEach(u => console.log(`   - ${u.username} : senha '${u.password}'`));
-      }
-    }
-
-    // 🔍 2. Consulta específica
+    // 🔍 Busca o usuário no banco
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, username, password, name, is_admin, sector, apps, is_active')
+      .select('*')
       .eq('username', username.toLowerCase())
-      .single();
+      .maybeSingle(); // Usa maybeSingle para evitar erro se não existir
 
     if (error) {
-      console.log(`❌ Erro na consulta específica: ${error.message}`);
+      console.error('❌ Erro na consulta:', error);
+      return res.status(500).json({ error: 'Erro no banco de dados' });
     }
 
     if (!user) {
-      console.log(`❌ Usuário '${username.toLowerCase()}' NÃO encontrado.`);
+      console.log(`❌ Usuário '${username.toLowerCase()}' não encontrado.`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
     console.log(`✅ Usuário encontrado: ${user.username}`);
     console.log(`   Senha no banco: '${user.password}'`);
-    console.log(`   Senha fornecida: '${password}'`);
 
     if (!user.is_active) {
       console.log(`❌ Usuário inativo.`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
+    // 🔓 COMPARAÇÃO DIRETA
     if (password !== user.password) {
       console.log(`❌ SENHA INCORRETA.`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -131,7 +117,7 @@ app.post('/api/verify-session', async (req, res) => {
       .select('*, users(*)')
       .eq('session_token', sessionToken)
       .gte('expires_at', new Date().toISOString())
-      .single();
+      .maybeSingle();
     if (error || !session) return res.json({ valid: false });
     res.json({ valid: true, user: session.users });
   } catch {
@@ -153,6 +139,7 @@ app.post('/api/logout', async (req, res) => {
   }
 });
 
+// Rota curinga: serve o index.html do portal
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html'));
 });
