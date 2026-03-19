@@ -1,32 +1,46 @@
+require('dotenv').config();
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cors = require('cors');
 
-const router = express.Router();
+const app = express();
+const PORT = process.env.PORT || 3000;
 
+// Trust proxy (necessário atrás do Render)
+app.set('trust proxy', true);
+
+// Servir arquivos estáticos do portal (index.html, css, js, imagens)
+app.use(express.static(path.join(__dirname, 'apps', 'portal', 'public')));
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
+
+// Configuração Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-router.use(cors());
-router.use(express.json());
-router.use(express.static(path.join(__dirname, 'public'))); // <- aqui serve index.html, css, etc.
-
+// Rate limiter com validação desabilitada (para não exibir warning)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: 'Muitas tentativas, tente novamente mais tarde.' },
-  validate: { trustProxy: false } // desativa validação do trust proxy
+  validate: false // desliga todas as validações
 });
 
-router.get('/api/ip', (req, res) => {
+// ========== ROTAS DE API ==========
+
+// Rota para obter IP público
+app.get('/api/ip', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   res.json({ ip });
 });
 
-router.post('/api/login', limiter, async (req, res) => {
+// Rota de login
+app.post('/api/login', limiter, async (req, res) => {
   const { username, password, deviceToken } = req.body;
 
   try {
@@ -48,6 +62,7 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
+    // Comparação direta (senha em texto plano)
     if (password !== user.password) {
       console.log(`❌ Senha incorreta para: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -93,7 +108,8 @@ router.post('/api/login', limiter, async (req, res) => {
   }
 });
 
-router.post('/api/verify-session', async (req, res) => {
+// Rota de verificação de sessão
+app.post('/api/verify-session', async (req, res) => {
   const { sessionToken } = req.body;
   try {
     const { data: session, error } = await supabase
@@ -109,7 +125,8 @@ router.post('/api/verify-session', async (req, res) => {
   }
 });
 
-router.post('/api/logout', async (req, res) => {
+// Rota de logout
+app.post('/api/logout', async (req, res) => {
   const { sessionToken, deviceToken } = req.body;
   try {
     await supabase
@@ -123,9 +140,18 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
-// Rota curinga: serve o index.html do portal
-router.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// ========== ROTAS PARA AS APPS (front-ends) ==========
+// (opcional, se você for criar outras pastas para as apps)
+app.use('/licitacoes', express.static(path.join(__dirname, 'apps', 'licitacoes', 'public')));
+app.use('/compra', express.static(path.join(__dirname, 'apps', 'compra', 'public')));
+// ... adicione as demais
+
+// Rota curinga: para qualquer outra rota, serve o index.html do portal (SPA)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'apps', 'portal', 'public', 'index.html'));
 });
 
-module.exports = router;
+// Inicia o servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
