@@ -6,7 +6,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Configura o trust proxy para o rate limiter funcionar atrás do Render
+// ✅ Trust proxy configurado para funcionar atrás do Render
 app.set('trust proxy', true);
 
 function loadApp(route, appPath) {
