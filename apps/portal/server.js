@@ -31,10 +31,10 @@ router.post('/api/login', limiter, async (req, res) => {
   try {
     console.log(`🔐 Tentativa de login: ${username}`);
 
-    // ⚠️ Verifique o nome da tabela: se for 'users', troque 'public_users' para 'users'
+    // Consulta na tabela users (schema public)
     const { data: user, error } = await supabase
-      .from('public_users')
-      .select('id, username, password_hash, name, is_admin')
+      .from('users')
+      .select('id, username, password, name, is_admin, sector, apps, is_active')
       .eq('username', username.toLowerCase())
       .single();
 
@@ -43,10 +43,16 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    console.log(`👤 Usuário encontrado: ${user.username}, senha no banco: ${user.password_hash}`);
+    // Verifica se o usuário está ativo
+    if (!user.is_active) {
+      console.log(`❌ Usuário inativo: ${username}`);
+      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
+    }
+
+    console.log(`👤 Usuário encontrado: ${user.username}, senha no banco: ${user.password}`);
 
     // 🔓 COMPARAÇÃO DIRETA (senha em texto plano)
-    if (password !== user.password_hash) {
+    if (password !== user.password) {
       console.log(`❌ Senha incorreta fornecida: ${password}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
@@ -59,6 +65,7 @@ router.post('/api/login', limiter, async (req, res) => {
 
     const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
+    // Insere sessão na tabela sessions
     const { error: sessionError } = await supabase
       .from('sessions')
       .insert({
@@ -74,12 +81,15 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(500).json({ error: 'Erro interno ao criar sessão' });
     }
 
+    // Retorna dados da sessão (incluindo sector e apps)
     res.json({
       success: true,
       session: {
         username: user.username,
         name: user.name,
         is_admin: user.is_admin,
+        sector: user.sector,
+        apps: user.apps,
         sessionToken,
         deviceToken,
         expiresAt
@@ -97,7 +107,7 @@ router.post('/api/verify-session', async (req, res) => {
   try {
     const { data: session, error } = await supabase
       .from('sessions')
-      .select('*, public_users(*)')
+      .select('*, users(*)')
       .eq('session_token', sessionToken)
       .gte('expires_at', new Date().toISOString())
       .single();
@@ -106,7 +116,7 @@ router.post('/api/verify-session', async (req, res) => {
       return res.json({ valid: false });
     }
 
-    res.json({ valid: true, user: session.public_users });
+    res.json({ valid: true, user: session.users });
   } catch (err) {
     res.json({ valid: false });
   }
@@ -127,6 +137,7 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
+// Rota curinga: serve o index.html para qualquer rota não-API
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
