@@ -1,7 +1,7 @@
 {
-  "name": "portal-monorepo",
+  "name": "portal-centralizado",
   "version": "1.0.0",
-  "description": "Monorepo do Portal IR",
+  "description": "Portal unificado com autenticação e frontends estáticos",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
