@@ -6,7 +6,7 @@ const path = require('path');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Render usa 10000 como padrão
 
 // Trust proxy (necessário atrás do Render)
 app.set('trust proxy', true);
@@ -328,7 +328,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'apps', 'portal', 'public', 'index.html'));
 });
 
-// ========== INICIA O SERVIDOR ==========
-app.listen(PORT, () => {
+// ========== INICIA O SERVIDOR (CORRIGIDO) ==========
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
