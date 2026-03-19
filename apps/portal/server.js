@@ -1,6 +1,5 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cors = require('cors');
@@ -40,8 +39,8 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
+    // 🔓 COMPARAÇÃO DIRETA (senha em texto plano)
+    if (password !== user.password_hash) {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
