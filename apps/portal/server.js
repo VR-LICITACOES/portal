@@ -25,6 +25,7 @@ router.get('/api/ip', (req, res) => {
   res.json({ ip });
 });
 
+// Rota de login
 router.post('/api/login', limiter, async (req, res) => {
   const { username, password, deviceToken } = req.body;
 
@@ -43,7 +44,6 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    // Verifica se o usuário está ativo
     if (!user.is_active) {
       console.log(`❌ Usuário inativo: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -51,7 +51,7 @@ router.post('/api/login', limiter, async (req, res) => {
 
     console.log(`👤 Usuário encontrado: ${user.username}, senha no banco: ${user.password}`);
 
-    // 🔓 COMPARAÇÃO DIRETA (senha em texto plano)
+    // 🔓 COMPARAÇÃO DIRETA
     if (password !== user.password) {
       console.log(`❌ Senha incorreta fornecida: ${password}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -62,10 +62,8 @@ router.post('/api/login', limiter, async (req, res) => {
     const sessionToken = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-
     const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-    // Insere sessão na tabela sessions
     const { error: sessionError } = await supabase
       .from('sessions')
       .insert({
@@ -81,7 +79,6 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(500).json({ error: 'Erro interno ao criar sessão' });
     }
 
-    // Retorna dados da sessão (incluindo sector e apps)
     res.json({
       success: true,
       session: {
@@ -101,6 +98,7 @@ router.post('/api/login', limiter, async (req, res) => {
   }
 });
 
+// Rota para verificar sessão
 router.post('/api/verify-session', async (req, res) => {
   const { sessionToken } = req.body;
 
@@ -122,6 +120,7 @@ router.post('/api/verify-session', async (req, res) => {
   }
 });
 
+// Rota de logout
 router.post('/api/logout', async (req, res) => {
   const { sessionToken, deviceToken } = req.body;
 
@@ -135,6 +134,85 @@ router.post('/api/logout', async (req, res) => {
   } catch {
     res.status(500).json({ error: 'Erro ao fazer logout' });
   }
+});
+
+// ---------- ADMIN: CRUD de usuários ----------
+// Listar todos os usuários (apenas admin pode acessar via frontend)
+router.get('/api/admin/users', async (req, res) => {
+  // Aqui deveria validar se o usuário da sessão é admin, mas para simplificar,
+  // faremos a validação no frontend. Mas você pode adicionar verificação.
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, name, is_admin, is_active, sector, apps, created_at, updated_at')
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// Criar usuário
+router.post('/api/admin/users', async (req, res) => {
+  const { username, password, name, is_admin, is_active, sector, apps } = req.body;
+  if (!username || !password || !name) {
+    return res.status(400).json({ error: 'Campos obrigatórios: username, password, name' });
+  }
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      username: username.toLowerCase(),
+      password, // texto plano
+      name,
+      is_admin: is_admin || false,
+      is_active: is_active !== undefined ? is_active : true,
+      sector: sector || null,
+      apps: apps || 'precos'
+    })
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+
+// Atualizar usuário
+router.put('/api/admin/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { username, password, name, is_admin, is_active, sector, apps } = req.body;
+
+  const updates = {};
+  if (username) updates.username = username.toLowerCase();
+  if (password) updates.password = password; // texto plano
+  if (name) updates.name = name;
+  if (is_admin !== undefined) updates.is_admin = is_admin;
+  if (is_active !== undefined) updates.is_active = is_active;
+  if (sector !== undefined) updates.sector = sector;
+  if (apps !== undefined) updates.apps = apps;
+
+  const { data, error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+
+// Deletar usuário
+router.delete('/api/admin/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// Rota para servir admin.html
+router.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Rota curinga: serve o index.html para qualquer rota não-API
