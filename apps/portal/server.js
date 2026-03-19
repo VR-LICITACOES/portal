@@ -30,6 +30,8 @@ router.post('/api/login', limiter, async (req, res) => {
   const { username, password, deviceToken } = req.body;
 
   try {
+    console.log(`🔐 Tentativa de login: ${username}`);
+
     const { data: user, error } = await supabase
       .from('users')
       .select('id, username, password_hash, name, is_admin')
@@ -37,13 +39,19 @@ router.post('/api/login', limiter, async (req, res) => {
       .single();
 
     if (error || !user) {
+      console.log(`❌ Usuário não encontrado: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
+    console.log(`👤 Usuário encontrado: ${user.username}, hash: ${user.password_hash.substring(0, 20)}...`);
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
+      console.log(`❌ Senha inválida para: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
+
+    console.log(`✅ Senha OK para: ${username}`);
 
     const sessionToken = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date();
@@ -62,7 +70,7 @@ router.post('/api/login', limiter, async (req, res) => {
       });
 
     if (sessionError) {
-      console.error('Erro ao criar sessão:', sessionError);
+      console.error('❌ Erro ao criar sessão:', sessionError);
       return res.status(500).json({ error: 'Erro interno ao criar sessão' });
     }
 
@@ -78,7 +86,7 @@ router.post('/api/login', limiter, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Erro no login:', err);
+    console.error('❌ Erro no login:', err);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
@@ -119,7 +127,6 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
-// Rota curinga: serve o index.html para qualquer rota não-API
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
