@@ -7,35 +7,29 @@ const cors = require('cors');
 
 const router = express.Router();
 
-// Configuração do Supabase (as variáveis vêm do .env da raiz)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Middlewares
 router.use(cors());
 router.use(express.json());
-router.use(express.static(path.join(__dirname, 'public'))); // arquivos estáticos do front
+router.use(express.static(path.join(__dirname, 'public')));
 
-// Limitação de taxa para rotas de login
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // máximo 10 tentativas
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: { error: 'Muitas tentativas, tente novamente mais tarde.' }
 });
 
-// Rota para obter IP público (usada pelo front)
 router.get('/api/ip', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   res.json({ ip });
 });
 
-// Rota de login
 router.post('/api/login', limiter, async (req, res) => {
   const { username, password, deviceToken } = req.body;
 
   try {
-    // Busca usuário pelo username
     const { data: user, error } = await supabase
       .from('portal_users')
       .select('id, username, password_hash, name, sector, permissions')
@@ -46,21 +40,17 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    // Verifica a senha
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
-    // Gera token de sessão (simples: UUID)
     const sessionToken = require('crypto').randomBytes(32).toString('hex');
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Captura IP
     const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-    // Salva sessão no Supabase
     const { error: sessionError } = await supabase
       .from('portal_sessions')
       .insert({
@@ -76,7 +66,6 @@ router.post('/api/login', limiter, async (req, res) => {
       return res.status(500).json({ error: 'Erro interno ao criar sessão' });
     }
 
-    // Retorna dados da sessão (sem password_hash)
     res.json({
       success: true,
       session: {
@@ -95,7 +84,6 @@ router.post('/api/login', limiter, async (req, res) => {
   }
 });
 
-// Rota para verificar sessão
 router.post('/api/verify-session', async (req, res) => {
   const { sessionToken } = req.body;
 
@@ -117,7 +105,6 @@ router.post('/api/verify-session', async (req, res) => {
   }
 });
 
-// Rota de logout
 router.post('/api/logout', async (req, res) => {
   const { sessionToken, deviceToken } = req.body;
 
@@ -133,7 +120,6 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
-// Rota padrão para servir o index.html (qualquer rota não-API)
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
