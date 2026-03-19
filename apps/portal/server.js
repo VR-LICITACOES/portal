@@ -31,7 +31,7 @@ router.post('/api/login', limiter, async (req, res) => {
 
   try {
     const { data: user, error } = await supabase
-      .from('portal_users')
+      .from('users')
       .select('id, username, password_hash, name, sector, permissions')
       .eq('username', username.toLowerCase())
       .single();
@@ -52,7 +52,7 @@ router.post('/api/login', limiter, async (req, res) => {
     const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     const { error: sessionError } = await supabase
-      .from('portal_sessions')
+      .from('sessions')
       .insert({
         session_token: sessionToken,
         user_id: user.id,
@@ -89,8 +89,8 @@ router.post('/api/verify-session', async (req, res) => {
 
   try {
     const { data: session, error } = await supabase
-      .from('portal_sessions')
-      .select('*, portal_users(*)')
+      .from('sessions')
+      .select('*, users(*)')
       .eq('session_token', sessionToken)
       .gte('expires_at', new Date().toISOString())
       .single();
@@ -99,7 +99,7 @@ router.post('/api/verify-session', async (req, res) => {
       return res.json({ valid: false });
     }
 
-    res.json({ valid: true, user: session.portal_users });
+    res.json({ valid: true, user: session.users });
   } catch (err) {
     res.json({ valid: false });
   }
@@ -110,7 +110,7 @@ router.post('/api/logout', async (req, res) => {
 
   try {
     await supabase
-      .from('portal_sessions')
+      .from('sessions')
       .delete()
       .eq('session_token', sessionToken)
       .eq('device_token', deviceToken);
