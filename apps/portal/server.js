@@ -119,6 +119,7 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
+// Rota curinga: serve o index.html para qualquer rota não-API (SPA)
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
