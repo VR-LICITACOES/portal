@@ -1,6 +1,6 @@
 /* VARIÁVEIS BASE - IDÊNTICAS A TRANSPORTADORAS */
 :root {
-    --primary: #ff521d;
+    --primary: #003366; /* Azul marinho escuro */
     --bg-primary: #FFFFFF;
     --bg-secondary: #F8F9FA;
     --bg-card: #FFFFFF;
@@ -21,7 +21,7 @@
     --btn-register: #3B82F6;
     --btn-delete: #EF4444;
     --btn-edit: #6B7280;
-    --btn-view: #F59E0B;
+    --btn-view: var(--primary);
     --btn-save: #22C55E;
     --alert-color: #EF4444;
 }
@@ -33,7 +33,7 @@
         --bg-card: #1A1A1A;
         --text-primary: #FFFFFF;
         --text-secondary: #A0A0A0;
-        --border-color: rgba(255, 82, 29, 0.08);
+        --border-color: rgba(0, 51, 102, 0.2);
         --input-bg: #2A2A2A;
         --table-stripe: #1F1F1F;
         --card-shadow: none;
@@ -209,7 +209,7 @@ h3 {
 
 .brand-button:hover {
     border-color: var(--primary);
-    background: rgba(255, 82, 29, 0.05);
+    background: rgba(0,51,102,0.05);
 }
 
 .brand-button.active {
@@ -765,7 +765,7 @@ button.small {
 .pag-btn:hover:not(:disabled) {
     border-color: var(--primary);
     color: var(--primary);
-    background: rgba(255, 82, 29, 0.05);
+    background: rgba(0,51,102,0.05);
     transform: none;
     opacity: 1;
 }
