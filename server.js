@@ -6,54 +6,54 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Função para montar uma app se o arquivo existir
-function mountApp(route, appPath) {
-    const fullPath = path.join(__dirname, appPath);
-    if (fs.existsSync(fullPath)) {
-        try {
-            const appModule = require(fullPath);
-            app.use(route, appModule);
-            console.log(`Módulo montado em ${route}`);
-        } catch (err) {
-            console.error(`Erro ao carregar módulo ${route}:`, err.message);
-        }
-    } else {
-        console.log(`Módulo ${route} não encontrado (${fullPath}) – ignorado`);
+// Função para carregar um app se o arquivo existir
+function loadApp(route, appPath) {
+  const fullPath = path.join(__dirname, appPath);
+  if (fs.existsSync(fullPath)) {
+    try {
+      const appModule = require(fullPath);
+      app.use(route, appModule);
+      console.log(`App carregado: ${route} -> ${appPath}`);
+    } catch (err) {
+      console.error(`Erro ao carregar ${appPath}:`, err.message);
     }
+  } else {
+    console.log(`App não encontrado: ${appPath} - rota ${route} não disponível`);
+    // Opcional: montar um middleware que retorna 501
+    app.use(route, (req, res) => {
+      res.status(501).send(`Aplicação ${route} ainda não implementada.`);
+    });
+  }
 }
 
-// Monta o portal (obrigatório)
-const portalPath = './apps/portal/server';
-if (fs.existsSync(path.join(__dirname, portalPath))) {
-    const portalApp = require(portalPath);
-    app.use('/', portalApp);
-} else {
-    console.error('Portal não encontrado! Encerrando.');
-    process.exit(1);
+// Carrega o portal (obrigatório)
+const portalPath = './apps/portal/server.js';
+if (!fs.existsSync(path.join(__dirname, portalPath))) {
+  console.error('ERRO: Portal não encontrado! Certifique-se de que apps/portal/server.js existe.');
+  process.exit(1);
 }
+const portalApp = require(portalPath);
+app.use('/', portalApp);
+console.log('Portal carregado com sucesso.');
 
-// Lista de aplicações (comente as que ainda não existem ou deixe todas, a função ignorará as ausentes)
-const apps = [
-    { route: '/licitacoes', path: './apps/licitacoes/server' },
-    { route: '/compra', path: './apps/compra/server' },
-    { route: '/cotacoes', path: './apps/cotacoes/server' },
-    { route: '/faturamento', path: './apps/faturamento/server' },
-    { route: '/frete', path: './apps/frete/server' },
-    { route: '/lucro', path: './apps/lucro/server' },
-    { route: '/pagar', path: './apps/pagar/server' },
-    { route: '/precos', path: './apps/precos/server' },
-    { route: '/receber', path: './apps/receber/server' },
-    { route: '/transportadoras', path: './apps/transportadoras/server' },
-    { route: '/vendas', path: './apps/vendas/server' }
-];
+// Carrega as demais apps (opcionais)
+loadApp('/licitacoes', './apps/licitacoes/server.js');
+loadApp('/compra', './apps/compra/server.js');
+loadApp('/cotacoes', './apps/cotacoes/server.js');
+loadApp('/faturamento', './apps/faturamento/server.js');
+loadApp('/frete', './apps/frete/server.js');
+loadApp('/lucro', './apps/lucro/server.js');
+loadApp('/pagar', './apps/pagar/server.js');
+loadApp('/precos', './apps/precos/server.js');
+loadApp('/receber', './apps/receber/server.js');
+loadApp('/transportadoras', './apps/transportadoras/server.js');
+loadApp('/vendas', './apps/vendas/server.js');
 
-apps.forEach(appInfo => mountApp(appInfo.route, appInfo.path));
-
-// Rota 404
+// Rota 404 padrão
 app.use((req, res) => {
-    res.status(404).send('Página não encontrada');
+  res.status(404).send('Página não encontrada');
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor central rodando na porta ${PORT}`);
+  console.log(`Servidor central rodando na porta ${PORT}`);
 });
