@@ -6,20 +6,20 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Função para carregar um app se o arquivo existir
+// Função para carregar uma app se o arquivo existir
 function loadApp(route, appPath) {
   const fullPath = path.join(__dirname, appPath);
   if (fs.existsSync(fullPath)) {
     try {
       const appModule = require(fullPath);
       app.use(route, appModule);
-      console.log(`App carregado: ${route} -> ${appPath}`);
+      console.log(`✅ App carregado: ${route} -> ${appPath}`);
     } catch (err) {
-      console.error(`Erro ao carregar ${appPath}:`, err.message);
+      console.error(`❌ Erro ao carregar ${appPath}:`, err.message);
     }
   } else {
-    console.log(`App não encontrado: ${appPath} - rota ${route} não disponível`);
-    // Opcional: montar um middleware que retorna 501
+    console.log(`⚠️ App não encontrado: ${appPath} - rota ${route} não disponível`);
+    // Opcional: middleware temporário
     app.use(route, (req, res) => {
       res.status(501).send(`Aplicação ${route} ainda não implementada.`);
     });
@@ -29,12 +29,12 @@ function loadApp(route, appPath) {
 // Carrega o portal (obrigatório)
 const portalPath = './apps/portal/server.js';
 if (!fs.existsSync(path.join(__dirname, portalPath))) {
-  console.error('ERRO: Portal não encontrado! Certifique-se de que apps/portal/server.js existe.');
+  console.error('❌ ERRO: Portal não encontrado! Certifique-se de que apps/portal/server.js existe.');
   process.exit(1);
 }
 const portalApp = require(portalPath);
 app.use('/', portalApp);
-console.log('Portal carregado com sucesso.');
+console.log('✅ Portal carregado com sucesso.');
 
 // Carrega as demais apps (opcionais)
 loadApp('/licitacoes', './apps/licitacoes/server.js');
@@ -55,5 +55,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor central rodando na porta ${PORT}`);
+  console.log(`🚀 Servidor central rodando na porta ${PORT}`);
 });
