@@ -1,5 +1,6 @@
 const API_URL = window.location.origin + '/api';
 
+// Lista de todos os módulos disponíveis (id, nome e URL relativa)
 const MODULES = [
     { id: 'usuarios',       name: 'Controle de Acesso',    url: '/usuarios',             available: true },
     { id: 'pregões',        name: 'Pregões',               url: '/pregoes',              available: true  },
@@ -20,6 +21,7 @@ const MODULES = [
     { id: 'comercial',      name: 'Comercial',             url: '',                      available: false }
 ];
 
+// Ícones dos módulos (mesmo da resposta anterior)
 const MODULE_ICONS = {
     'usuarios':         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-cog-icon lucide-user-cog"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg>',
     'pregões':          '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-8.381 8.38a 1 1 0 0 1-3.001-3l8.384-8.381"/><path d="m16 16 6-6"/><path d="m21.5 10.5-8-8"/><path d="m8 8 6-6"/><path d="m8.5 7.5 8 8"/></svg>',
@@ -47,9 +49,14 @@ let activeModuleId     = null;
 let hoverTimeout       = null;
 let sidebarRevealed    = false;
 
+// Função para obter permissões baseado no usuário
 function getUserPermissions(sessionInfo) {
     if (sessionInfo.is_admin) {
-        return MODULES.map(m => m.id);
+        return MODULES.map(m => m.id); // admin vê todos
+    }
+    // Se não for admin, pode-se usar o campo 'apps' (string com nomes separados por vírgula)
+    if (sessionInfo.apps) {
+        return sessionInfo.apps.split(',').map(s => s.trim());
     }
     return [];
 }
@@ -235,10 +242,11 @@ function showDashboard(sessionInfo) {
 
     const greeting   = getGreeting();
     const userName   = sessionInfo.name || sessionInfo.username;
+    const userSector = sessionInfo.sector || '';
 
     document.getElementById('userInitial').textContent       = userName.charAt(0).toUpperCase();
     document.getElementById('sidebarUserName').textContent   = userName;
-    document.getElementById('sidebarUserSector').textContent = '';
+    document.getElementById('sidebarUserSector').textContent = userSector;
 
     const welcomeGreetingEl = document.getElementById('welcomeGreeting');
     if (welcomeGreetingEl) welcomeGreetingEl.textContent = `${greeting}, ${userName}!`;
