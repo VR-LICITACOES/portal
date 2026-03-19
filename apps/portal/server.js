@@ -6,9 +6,6 @@ const cors = require('cors');
 
 const router = express.Router();
 
-// ✅ Configura o trust proxy para o rate limiter funcionar atrás do Render
-router.set('trust proxy', true);
-
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -34,15 +31,13 @@ router.post('/api/login', limiter, async (req, res) => {
   try {
     console.log(`🔐 Tentativa de login: ${username}`);
 
-    // ✅ Verifica se as variáveis de ambiente estão definidas
     if (!supabaseUrl || !supabaseKey) {
       console.error('❌ SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não definidas');
       return res.status(500).json({ error: 'Erro de configuração do servidor' });
     }
 
-    // ✅ Consulta na tabela users (se o nome for diferente, ajuste aqui)
     const { data: user, error } = await supabase
-      .from('users')
+      .from('users') // Nome da tabela no Supabase (pode ser 'users' ou 'public_users')
       .select('id, username, password, name, is_admin, sector, apps, is_active')
       .eq('username', username.toLowerCase())
       .single();
@@ -64,7 +59,6 @@ router.post('/api/login', limiter, async (req, res) => {
 
     console.log(`👤 Usuário encontrado: ${user.username}, senha no banco: ${user.password}`);
 
-    // 🔓 COMPARAÇÃO DIRETA (senha em texto plano)
     if (password !== user.password) {
       console.log(`❌ Senha incorreta. Fornecida: ${password}, Esperada: ${user.password}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
@@ -112,7 +106,6 @@ router.post('/api/login', limiter, async (req, res) => {
   }
 });
 
-// ✅ Rota de verificação de sessão
 router.post('/api/verify-session', async (req, res) => {
   const { sessionToken } = req.body;
   try {
@@ -129,7 +122,6 @@ router.post('/api/verify-session', async (req, res) => {
   }
 });
 
-// ✅ Rota de logout
 router.post('/api/logout', async (req, res) => {
   const { sessionToken, deviceToken } = req.body;
   try {
@@ -144,7 +136,6 @@ router.post('/api/logout', async (req, res) => {
   }
 });
 
-// ✅ Serve o front-end para qualquer outra rota
 router.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
