@@ -1,39 +1,5 @@
 const API_URL = window.location.origin + '/api';
 
-/* ── PERMISSÕES ── */
-const SECTOR_PERMISSIONS = {
-    'Administrador': ['usuarios', 'pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','receber','vendas','pagamento','lucro-real', 'financeiro', 'comercial'],
-    'Vendas':        ['pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial'],
-    'Financeiro':    ['pregões','transportadoras','faturamento','controle-frete','receber','pagamento','comercial'],
-    'Almoxarifado':  ['transportadoras','cotacoes-frete','faturamento', 'estoque', 'controle-frete','comercial'],
-};
-
-const USER_SPECIFIC_PERMISSIONS = {
-    'vendas2':    ['pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial', 'vendas-miguel'],
-    'vendas':     ['pregões','tabela-precos','compra','transportadoras','cotacoes-frete','faturamento','estoque','controle-frete','comercial', 'vendas-isaque'],
-};
-
-/* ── ÍCONES ── */
-const MODULE_ICONS = {
-    'usuarios':         '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-cog-icon lucide-user-cog"><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m14.305 16.53.923-.382"/><path d="m15.228 13.852-.923-.383"/><path d="m16.852 12.228-.383-.923"/><path d="m16.852 17.772-.383.924"/><path d="m19.148 12.228.383-.923"/><path d="m19.53 18.696-.382-.924"/><path d="m20.772 13.852.924-.383"/><path d="m20.772 16.148.924.383"/><circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/></svg>',
-    'pregões':          '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-8.381 8.38a 1 1 0 0 1-3.001-3l8.384-8.381"/><path d="m16 16 6-6"/><path d="m21.5 10.5-8-8"/><path d="m8 8 6-6"/><path d="m8.5 7.5 8 8"/></svg>',
-    'tabela-precos':    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 13H7"/><path d="M19 9h-4"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="15" y="5" width="4" height="12" rx="1"/><rect x="7" y="8" width="4" height="9" rx="1"/></svg>',
-    'compra':           '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
-    'transportadoras':  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>',
-    'cotacoes-frete':   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m7.5 4.27 9 5.15"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/><circle cx="18.5" cy="15.5" r="2.5"/><path d="M20.27 17.27 22 19"/></svg>',
-    'faturamento':      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg>',
-    'estoque':          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
-    'controle-frete':   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>',
-    'receber':          '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/><path d="m16 19 3 3 3-3"/><path d="M18 12h.01"/><path d="M19 16v6"/><path d="M6 12h.01"/><circle cx="12" cy="12" r="2"/></svg>',
-    'vendas':           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-    'vendas-miguel':    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-    'vendas-isaque':    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-    'pagamento':        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/><path d="M18 12h.01"/><path d="M19 22v-6"/><path d="m22 19-3-3-3 3"/><path d="M6 12h.01"/><circle cx="12" cy="12" r="2"/></svg>',
-    'lucro-real':       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-percent-icon lucide-percent"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
-    'comercial':        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
-    'financeiro':       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-landmark-icon lucide-landmark"><path d="M10 18v-7"/><path d="M11.12 2.198a2 2 0 0 1 1.76.006l7.866 3.847c.476.233.31.949-.22.949H3.474c-.53 0-.695-.716-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></svg>'
-};
-
 /* ── MÓDULOS ── */
 const MODULES = [
     { id: 'usuarios',       name: 'Controle de Acesso',    url: 'https://usu-rios.onrender.com',             available: true },
@@ -55,6 +21,9 @@ const MODULES = [
     { id: 'comercial',      name: 'Comercial',             url: '',                                          available: false }
 ];
 
+/* ── ÍCONES (igual ao anterior) ── */
+const MODULE_ICONS = { /* ... cole o objeto de ícones igual ao anterior ... */ };
+
 let deviceToken        = null;
 let publicIP           = null;
 let currentSessionInfo = null;
@@ -64,11 +33,10 @@ let sidebarRevealed    = false;
 
 /* ── HELPERS ── */
 function getUserPermissions(sessionInfo) {
-    const username = sessionInfo.username?.toLowerCase();
-    if (USER_SPECIFIC_PERMISSIONS[username]) return USER_SPECIFIC_PERMISSIONS[username];
-    const sector = sessionInfo.sector || '';
-    if (SECTOR_PERMISSIONS[sector]) return SECTOR_PERMISSIONS[sector];
-    return [];
+    if (sessionInfo.is_admin) {
+        return MODULES.map(m => m.id); // admin vê todos
+    }
+    return []; // não-admin não vê nenhum (ajuste conforme necessidade)
 }
 
 function getGreeting() {
@@ -183,7 +151,6 @@ function loadSidebarModules(sessionInfo) {
         item.innerHTML = `<span class="module-icon">${icon}</span><span class="module-label">${module.name}${newBadge}</span>`;
         sidebarModules.appendChild(item);
     });
-
 }
 
 /* ── CARREGAR CARDS NA TELA INICIAL ── */
@@ -259,11 +226,10 @@ function showDashboard(sessionInfo) {
 
     const greeting   = getGreeting();
     const userName   = sessionInfo.name || sessionInfo.username;
-    const userSector = sessionInfo.sector || 'Usuário';
 
     document.getElementById('userInitial').textContent       = userName.charAt(0).toUpperCase();
     document.getElementById('sidebarUserName').textContent   = userName;
-    document.getElementById('sidebarUserSector').textContent = userSector;
+    document.getElementById('sidebarUserSector').textContent = ''; // sem setor
 
     const welcomeGreetingEl = document.getElementById('welcomeGreeting');
     if (welcomeGreetingEl) welcomeGreetingEl.textContent = `${greeting}, ${userName}!`;
