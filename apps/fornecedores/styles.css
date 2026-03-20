@@ -655,3 +655,27 @@ button:hover {
         align-items: flex-start;
     }
 }
+/* (todo o CSS existente, mais o seguinte no final) */
+
+.envio-option {
+    background: var(--input-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    user-select: none;
+    flex: 1;
+    text-align: center;
+}
+
+.envio-option.selected {
+    background: #22C55E;
+    border-color: #22C55E;
+    color: white;
+}
+
+.envio-option:hover {
+    border-color: var(--primary);
+}
