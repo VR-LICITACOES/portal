@@ -1,8 +1,9 @@
 // ============================================
-// CALENDAR MODAL FUNCTIONALITY
+// CALENDAR MODAL FUNCTIONALITY (dias do mês)
 // ============================================
 
 let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth();
 
 function toggleCalendar() {
     const modal = document.getElementById('calendarModal');
@@ -10,49 +11,86 @@ function toggleCalendar() {
         modal.classList.remove('show');
     } else {
         calendarYear = currentMonth.getFullYear();
-        renderCalendar();
+        calendarMonth = currentMonth.getMonth();
+        renderCalendarDays();
         modal.classList.add('show');
     }
 }
 
 function changeCalendarYear(direction) {
     calendarYear += direction;
-    renderCalendar();
+    renderCalendarDays();
 }
 
-function renderCalendar() {
-    const yearElement = document.getElementById('calendarYear');
-    const monthsContainer = document.getElementById('calendarMonths');
+function changeCalendarMonth(direction) {
+    calendarMonth += direction;
+    if (calendarMonth < 0) {
+        calendarMonth = 11;
+        calendarYear--;
+    } else if (calendarMonth > 11) {
+        calendarMonth = 0;
+        calendarYear++;
+    }
+    renderCalendarDays();
+}
+
+function renderCalendarDays() {
+    const yearMonthElement = document.getElementById('calendarYearMonth');
+    const daysContainer = document.getElementById('calendarDays');
     
-    if (!yearElement || !monthsContainer) return;
-    
-    yearElement.textContent = calendarYear;
+    if (!yearMonthElement || !daysContainer) return;
     
     const monthNames = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 
-        'Maio', 'Junho', 'Julho', 'Agosto', 
-        'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
     
-    monthsContainer.innerHTML = '';
+    yearMonthElement.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
     
-    monthNames.forEach((name, index) => {
-        const monthButton = document.createElement('div');
-        monthButton.className = 'calendar-month';
-        monthButton.textContent = name;
-        
-        // Marcar o mês atual
-        if (calendarYear === currentMonth.getFullYear() && index === currentMonth.getMonth()) {
-            monthButton.classList.add('current');
+    // Obter dias que têm registros
+    const diasComRegistros = new Set();
+    licitacoes.forEach(l => {
+        if (l.data) {
+            const data = new Date(l.data);
+            if (data.getFullYear() === calendarYear && data.getMonth() === calendarMonth) {
+                diasComRegistros.add(data.getDate());
+            }
         }
-        
-        monthButton.onclick = () => selectMonth(index);
-        monthsContainer.appendChild(monthButton);
     });
+    
+    // Gerar grade de dias
+    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    
+    let html = '<div class="calendar-weekdays">';
+    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(day => {
+        html += `<div class="calendar-weekday">${day}</div>`;
+    });
+    html += '</div><div class="calendar-days-grid">';
+    
+    // Dias vazios do início
+    for (let i = 0; i < firstDay; i++) {
+        html += '<div class="calendar-day empty"></div>';
+    }
+    
+    // Dias do mês
+    for (let d = 1; d <= daysInMonth; d++) {
+        const hasRecord = diasComRegistros.has(d);
+        const isToday = (calendarYear === new Date().getFullYear() && 
+                         calendarMonth === new Date().getMonth() && 
+                         d === new Date().getDate());
+        
+        html += `<div class="calendar-day ${hasRecord ? 'has-record' : ''} ${isToday ? 'today' : ''}" 
+                      onclick="selectDay(${d})">${d}</div>`;
+    }
+    
+    html += '</div>';
+    daysContainer.innerHTML = html;
 }
 
-function selectMonth(monthIndex) {
-    currentMonth = new Date(calendarYear, monthIndex, 1);
+function selectDay(day) {
+    const selectedDate = new Date(calendarYear, calendarMonth, day);
+    currentMonth = selectedDate;
     isAllMonths = false;
     updateMonthDisplay();
     loadLicitacoes();
