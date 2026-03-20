@@ -58,7 +58,7 @@
         </div>
     </div>
 
-    <!-- Modal de Formulário (com abas) -->
+    <!-- Modal de Formulário (simples, sem abas) -->
     <div class="modal-overlay" id="formModal" style="display: none;">
         <div class="modal-content large">
             <div class="modal-header">
@@ -67,53 +67,36 @@
             </div>
             <form id="modalFornecedorForm" onsubmit="handleSubmit(event)">
                 <input type="hidden" id="modalEditId">
-                
-                <!-- Abas -->
-                <div class="tabs">
-                    <div class="tab-buttons">
-                        <button type="button" class="tab-button active" data-tab="geral">Geral</button>
-                        <button type="button" class="tab-button" data-tab="cotacao">Cotação</button>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="modalNome">Nome *</label>
+                        <input type="text" id="modalNome" required>
                     </div>
-                    
-                    <!-- Aba Geral -->
-                    <div class="tab-content active" id="tab-geral">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="modalNome">Nome *</label>
-                                <input type="text" id="modalNome" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="modalTelefone">Telefone</label>
-                                <input type="text" id="modalTelefone" placeholder="(00) 0000-0000">
-                            </div>
-                            <div class="form-group">
-                                <label for="modalCelular">Celular</label>
-                                <input type="text" id="modalCelular" placeholder="(00) 00000-0000">
-                            </div>
-                            <div class="form-group">
-                                <label for="modalEmail">E-mail</label>
-                                <input type="email" id="modalEmail" placeholder="exemplo@dominio.com">
-                            </div>
-                        </div>
+                    <div class="form-group">
+                        <label for="modalTelefone">Telefone</label>
+                        <input type="text" id="modalTelefone" placeholder="(00) 0000-0000">
                     </div>
-                    
-                    <!-- Aba Cotação -->
-                    <div class="tab-content" id="tab-cotacao">
-                        <div class="form-group">
-                            <label>Método de envio preferencial:</label>
-                            <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
-                                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="radio" name="metodoEnvio" value="whatsapp" checked> WhatsApp (usar celular)
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="radio" name="metodoEnvio" value="email"> E-mail
-                                </label>
-                            </div>
-                            <p class="field-note">* O WhatsApp usará o número de celular cadastrado.</p>
+                    <div class="form-group">
+                        <label for="modalCelular">Celular</label>
+                        <input type="text" id="modalCelular" placeholder="(00) 00000-0000">
+                    </div>
+                    <div class="form-group">
+                        <label for="modalEmail">E-mail</label>
+                        <input type="email" id="modalEmail" placeholder="exemplo@dominio.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Método de envio preferencial:</label>
+                        <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="metodoEnvio" value="whatsapp" checked> WhatsApp (usar celular)
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="metodoEnvio" value="email"> E-mail
+                            </label>
                         </div>
+                        <p class="field-note">* O WhatsApp usará o número de celular cadastrado.</p>
                     </div>
                 </div>
-                
                 <div class="modal-actions modal-actions-right">
                     <button type="submit" class="save">Salvar</button>
                     <button type="button" onclick="closeFormModal()" class="danger">Cancelar</button>
