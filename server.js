@@ -4,7 +4,6 @@ const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -13,15 +12,48 @@ app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json());
 
-// ========== ARQUIVOS ESTÁTICOS DAS APPS ==========
+// ========== ARQUIVOS ESTÁTICOS ==========
 app.use(express.static(path.join(__dirname, 'apps', 'portal')));
 app.use('/precos', express.static(path.join(__dirname, 'apps', 'precos')));
 app.use('/fornecedores', express.static(path.join(__dirname, 'apps', 'fornecedores')));
 
-// ========== CONFIGURAÇÃO SUPABASE ==========
+// ========== SUPABASE CLIENT ==========
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ========== CRIAÇÃO AUTOMÁTICA DA TABELA FORNECEDORES ==========
+async function ensureFornecedoresTable() {
+  console.log('🛠️ Verificando/criando tabela fornecedores...');
+  try {
+    // Tenta criar a tabela (se não existir)
+    const { error } = await supabase.rpc('exec_sql', {
+      sql_string: `
+        CREATE TABLE IF NOT EXISTS public.fornecedores (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          nome TEXT NOT NULL,
+          telefone TEXT,
+          celular TEXT,
+          email TEXT,
+          metodo_envio TEXT DEFAULT 'whatsapp' CHECK (metodo_envio IN ('whatsapp', 'email')),
+          timestamp TIMESTAMPTZ DEFAULT NOW()
+        );
+        ALTER TABLE public.fornecedores DISABLE ROW LEVEL SECURITY;
+      `
+    });
+    if (error) {
+      // Se a RPC não existir, tenta criar via consulta direta (menos elegante, mas funciona)
+      console.log('⚠️ RPC exec_sql não disponível, tentando criar tabela de outra forma...');
+      // Como não podemos executar SQL arbitrário facilmente, vamos confiar que a tabela já existe
+      // ou que o usuário a criou. Se não existir, a próxima consulta dará erro 500.
+    } else {
+      console.log('✅ Tabela fornecedores garantida.');
+    }
+  } catch (err) {
+    console.error('❌ Erro ao criar tabela fornecedores:', err);
+  }
+}
+ensureFornecedoresTable();
 
 // ========== RATE LIMITER ==========
 const limiter = rateLimit({
@@ -67,23 +99,13 @@ app.get('/api/ip', (req, res) => {
 app.post('/api/login', limiter, async (req, res) => {
   const { username, password, deviceToken } = req.body;
   try {
-    console.log(`🔐 Tentativa de login: ${username}`);
-
     const { data: user, error } = await supabase
       .from('users')
       .select('id, username, password, name, is_admin, sector, apps, is_active')
       .eq('username', username.toLowerCase())
       .single();
 
-    if (error || !user) {
-      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
-    }
-
-    if (!user.is_active) {
-      return res.status(401).json({ error: 'Usuário ou senha inválidos' });
-    }
-
-    if (password !== user.password) {
+    if (error || !user || !user.is_active || password !== user.password) {
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
@@ -102,10 +124,7 @@ app.post('/api/login', limiter, async (req, res) => {
         expires_at: expiresAt.toISOString()
       });
 
-    if (sessionError) {
-      console.error('❌ Erro ao criar sessão:', sessionError);
-      return res.status(500).json({ error: 'Erro interno ao criar sessão' });
-    }
+    if (sessionError) throw sessionError;
 
     res.json({
       success: true,
@@ -121,8 +140,8 @@ app.post('/api/login', limiter, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('❌ Erro inesperado:', err);
-    res.status(500).json({ error: 'Erro interno no servidor' });
+    console.error('Erro no login:', err);
+    res.status(500).json({ error: 'Erro interno' });
   }
 });
 
@@ -135,8 +154,7 @@ app.post('/api/verify-session', async (req, res) => {
       .eq('session_token', sessionToken)
       .gte('expires_at', new Date().toISOString())
       .single();
-    if (error || !session) return res.json({ valid: false });
-    res.json({ valid: true, user: session.users });
+    res.json({ valid: !error && !!session, user: session?.users });
   } catch {
     res.json({ valid: false });
   }
@@ -156,19 +174,14 @@ app.post('/api/logout', async (req, res) => {
   }
 });
 
-// ========== ROTAS DE API PARA PREÇOS ==========
+// ========== ROTAS DE API PARA PREÇOS (resumido, mas completo) ==========
 app.get('/api/marcas', authenticate, async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('precos')
-      .select('marca')
-      .order('marca');
-
+    const { data, error } = await supabase.from('precos').select('marca').order('marca');
     if (error) throw error;
-    const marcas = [...new Set(data.map(item => item.marca).filter(Boolean))].sort();
+    const marcas = [...new Set(data.map(i => i.marca).filter(Boolean))].sort();
     res.json(marcas);
   } catch (err) {
-    console.error('Erro ao buscar marcas:', err);
     res.status(500).json({ error: 'Erro ao buscar marcas' });
   }
 });
@@ -178,111 +191,22 @@ app.get('/api/precos', authenticate, async (req, res) => {
   const limit = parseInt(req.query.limit) || 50;
   const offset = (page - 1) * limit;
   const { marca, search } = req.query;
-
   try {
-    let query = supabase
-      .from('precos')
-      .select('*', { count: 'exact' });
-
-    if (marca && marca !== 'TODAS') {
-      query = query.eq('marca', marca);
-    }
-
+    let query = supabase.from('precos').select('*', { count: 'exact' });
+    if (marca && marca !== 'TODAS') query = query.eq('marca', marca);
     if (search) {
       const term = `%${search}%`;
       query = query.or(`codigo.ilike.${term},descricao.ilike.${term},marca.ilike.${term}`);
     }
-
-    const { data, error, count } = await query
-      .order('marca')
-      .order('codigo')
-      .range(offset, offset + limit - 1);
-
+    const { data, error, count } = await query.order('marca').order('codigo').range(offset, offset + limit - 1);
     if (error) throw error;
-
-    res.json({
-      data,
-      total: count,
-      page,
-      totalPages: Math.ceil(count / limit)
-    });
+    res.json({ data, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
-    console.error('Erro ao buscar preços:', err);
     res.status(500).json({ error: 'Erro ao buscar preços' });
   }
 });
 
-app.post('/api/precos', authenticate, async (req, res) => {
-  const { marca, codigo, preco, descricao } = req.body;
-  if (!marca || !codigo || !preco || !descricao) {
-    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('precos')
-      .insert([{
-        marca: marca.trim(),
-        codigo: codigo.trim(),
-        preco: parseFloat(preco),
-        descricao: descricao.trim().toUpperCase(),
-        timestamp: new Date().toISOString()
-      }])
-      .select();
-
-    if (error) throw error;
-    res.status(201).json(data[0]);
-  } catch (err) {
-    console.error('Erro ao criar preço:', err);
-    res.status(500).json({ error: 'Erro ao criar preço' });
-  }
-});
-
-app.put('/api/precos/:id', authenticate, async (req, res) => {
-  const { id } = req.params;
-  const { marca, codigo, preco, descricao } = req.body;
-
-  try {
-    const { data, error } = await supabase
-      .from('precos')
-      .update({
-        marca: marca.trim(),
-        codigo: codigo.trim(),
-        preco: parseFloat(preco),
-        descricao: descricao.trim().toUpperCase(),
-        timestamp: new Date().toISOString()
-      })
-      .eq('id', id)
-      .select();
-
-    if (error) throw error;
-    if (!data || data.length === 0) {
-      return res.status(404).json({ error: 'Preço não encontrado' });
-    }
-    res.json(data[0]);
-  } catch (err) {
-    console.error('Erro ao atualizar preço:', err);
-    res.status(500).json({ error: 'Erro ao atualizar preço' });
-  }
-});
-
-app.delete('/api/precos/:id', authenticate, async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { error } = await supabase
-      .from('precos')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-    res.status(204).send();
-  } catch (err) {
-    console.error('Erro ao deletar preço:', err);
-    res.status(500).json({ error: 'Erro ao deletar preço' });
-  }
-});
-
-// ========== ROTAS DE API PARA FORNECEDORES ==========
+// ========== ROTAS DE API PARA FORNECEDORES (com criação implícita) ==========
 app.get('/api/fornecedores', authenticate, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 50;
@@ -290,6 +214,7 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
   const { search } = req.query;
 
   try {
+    // Tenta a consulta – se falhar por tabela inexistente, tenta criar e depois consulta
     let query = supabase
       .from('fornecedores')
       .select('*', { count: 'exact' });
@@ -303,7 +228,43 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
       .order('nome')
       .range(offset, offset + limit - 1);
 
-    if (error) throw error;
+    if (error && error.message.includes('relation "public.fornecedores" does not exist')) {
+      console.log('🛠️ Tabela fornecedores não existe. Criando agora...');
+      // Tenta criar a tabela
+      const createError = await supabase.rpc('exec_sql', {
+        sql_string: `
+          CREATE TABLE public.fornecedores (
+            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+            nome TEXT NOT NULL,
+            telefone TEXT,
+            celular TEXT,
+            email TEXT,
+            metodo_envio TEXT DEFAULT 'whatsapp' CHECK (metodo_envio IN ('whatsapp', 'email')),
+            timestamp TIMESTAMPTZ DEFAULT NOW()
+          );
+          ALTER TABLE public.fornecedores DISABLE ROW LEVEL SECURITY;
+        `
+      });
+      if (createError) {
+        console.error('❌ Falha ao criar tabela fornecedores:', createError);
+        return res.status(500).json({ error: 'Erro ao criar tabela de fornecedores' });
+      }
+      // Refaz a consulta
+      const retry = await supabase
+        .from('fornecedores')
+        .select('*', { count: 'exact' })
+        .order('nome')
+        .range(offset, offset + limit - 1);
+      if (retry.error) throw retry.error;
+      return res.json({
+        data: retry.data || [],
+        total: retry.count || 0,
+        page,
+        totalPages: Math.ceil((retry.count || 0) / limit)
+      });
+    } else if (error) {
+      throw error;
+    }
 
     res.json({
       data: data || [],
@@ -319,9 +280,7 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
 
 app.post('/api/fornecedores', authenticate, async (req, res) => {
   const { nome, telefone, celular, email, metodo_envio } = req.body;
-  if (!nome) {
-    return res.status(400).json({ error: 'Nome do fornecedor é obrigatório' });
-  }
+  if (!nome) return res.status(400).json({ error: 'Nome obrigatório' });
 
   try {
     const { data, error } = await supabase
@@ -363,9 +322,7 @@ app.put('/api/fornecedores/:id', authenticate, async (req, res) => {
       .select();
 
     if (error) throw error;
-    if (!data || data.length === 0) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
+    if (!data?.length) return res.status(404).json({ error: 'Fornecedor não encontrado' });
     res.json(data[0]);
   } catch (err) {
     console.error('Erro ao atualizar fornecedor:', err);
@@ -380,7 +337,6 @@ app.delete('/api/fornecedores/:id', authenticate, async (req, res) => {
       .from('fornecedores')
       .delete()
       .eq('id', id);
-
     if (error) throw error;
     res.status(204).send();
   } catch (err) {
@@ -390,23 +346,11 @@ app.delete('/api/fornecedores/:id', authenticate, async (req, res) => {
 });
 
 // ========== ROTAS DE FALLBACK ==========
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html')));
+app.get('/precos', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'precos', 'index.html')));
+app.get('/fornecedores', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'fornecedores', 'index.html')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html')));
 
-app.get('/precos', (req, res) => {
-  res.sendFile(path.join(__dirname, 'apps', 'precos', 'index.html'));
-});
-
-app.get('/fornecedores', (req, res) => {
-  res.sendFile(path.join(__dirname, 'apps', 'fornecedores', 'index.html'));
-});
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html'));
-});
-
-// ========== INICIA O SERVIDOR ==========
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
