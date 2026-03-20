@@ -1,4 +1,4 @@
-/* VARIÁVEIS BASE - IGUAL ÀS OUTRAS APLICAÇÕES */
+/* VARIÁVEIS BASE - IDÊNTICO ÀS OUTRAS APLICAÇÕES */
 :root {
     --primary: #003366;
     --bg-primary: #FFFFFF;
@@ -9,7 +9,7 @@
     --border-color: #E5E7EB;
     --input-bg: #F9FAFB;
     --success-color: #22C55E;
-    --warning-color: #ff521d;
+    --warning-color: #ffc107;
     --info-color: #3B82F6;
     --table-stripe: #FAFAFA;
     --table-hover: rgba(0, 0, 0, 0.02);
@@ -361,7 +361,7 @@ h1 {
     color: var(--primary);
 }
 
-/* CALENDAR MODAL */
+/* CALENDAR MODAL (Dias do mês) */
 .calendar-modal {
     display: none;
     position: fixed;
@@ -383,7 +383,7 @@ h1 {
 .calendar-content {
     background: var(--bg-card);
     border-radius: 16px;
-    padding: 2rem;
+    padding: 1.5rem;
     box-shadow: 0 20px 60px var(--shadow);
     border: 1px solid var(--border-color);
     max-width: 400px;
@@ -395,11 +395,11 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .calendar-header h3 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -423,37 +423,55 @@ h1 {
     color: var(--text-primary);
 }
 
-.calendar-months {
+.calendar-weekdays {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-}
-
-.calendar-month {
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
+    grid-template-columns: repeat(7, 1fr);
     text-align: center;
-    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+
+.calendar-weekday {
+    font-size: 0.8rem;
     font-weight: 600;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+}
+
+.calendar-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.calendar-day {
+    padding: 0.5rem;
+    text-align: center;
     font-size: 0.9rem;
-    color: var(--text-primary);
+    border-radius: 8px;
+    cursor: pointer;
     transition: all 0.2s ease;
+    background: var(--input-bg);
+    color: var(--text-primary);
 }
 
-.calendar-month:hover {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 51, 102, 0.3);
+.calendar-day.empty {
+    background: transparent;
+    cursor: default;
 }
 
-.calendar-month.current {
+.calendar-day.has-record {
     background: var(--primary);
     color: white;
-    border-color: var(--primary);
+}
+
+.calendar-day.has-record:hover {
+    background: #004080;
+    transform: scale(1.05);
+}
+
+.calendar-day.today {
+    border: 2px solid var(--primary);
+    font-weight: bold;
 }
 
 /* DASHBOARD CARDS */
@@ -474,6 +492,7 @@ h1 {
     align-items: center;
     gap: 1rem;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .stat-card:hover {
@@ -496,18 +515,15 @@ h1 {
     background: rgba(59, 130, 246, 0.1);
     color: #3B82F6;
 }
-.stat-value-default {
-    color: #3B82F6;
-}
 
 .stat-icon-success {
     background: rgba(34, 197, 94, 0.1);
     color: #22C55E;
 }
 
-.stat-icon-warning {
-    background: rgba(255,82,29, 0.1);
-    color: #ff521d;
+.stat-icon-warning-light {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
 }
 
 .stat-icon-danger {
@@ -532,7 +548,7 @@ h1 {
 }
 
 .stat-value-warning {
-    color: #ff521d;
+    color: #ffc107;
 }
 
 .stat-value-info {
@@ -592,7 +608,7 @@ h1 {
     }
 }
 
-/* TABELA */
+/* TABELA PRINCIPAL */
 table {
     width: 100%;
     border-collapse: separate;
@@ -654,9 +670,9 @@ tbody tr:hover {
 }
 
 .status-badge.warning {
-    background: rgba(255, 82, 29, 0.12);
-    color: #ff521d;
-    border: 1px solid rgba(255, 82, 29, 0.35);
+    background: rgba(255, 193, 7, 0.15);
+    color: #e6a000;
+    border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
 /* AÇÕES */
@@ -819,6 +835,12 @@ tbody tr:hover {
 .modal-actions button {
     margin: 0;
     min-width: 120px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 button.success {
@@ -908,6 +930,10 @@ input:focus, select:focus, textarea:focus {
     border-top: none;
     border-radius: 0 0 12px 12px;
     margin-bottom: 1.5rem;
+    display: flex;
+    gap: 2rem;
+    padding: 1rem;
+    font-size: 10pt;
 }
 
 /* CONTEXT MENU */
@@ -959,6 +985,49 @@ input:focus, select:focus, textarea:focus {
         opacity: 0;
         transform: translateY(100px);
     }
+}
+
+/* PAGINAÇÃO DO MODAL VENCIDOS */
+#vencidosPaginacao .paginacao-btns {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pag-btn {
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 36px;
+    transition: all 0.15s ease;
+    margin: 0;
+}
+
+.pag-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(0, 51, 102, 0.05);
+    transform: none;
+    opacity: 1;
+}
+
+.pag-btn-active {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: var(--primary) !important;
+}
+
+.pag-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: var(--input-bg);
 }
 
 /* RESPONSIVO */
@@ -1034,5 +1103,14 @@ input:focus, select:focus, textarea:focus {
     
     .modal-actions button {
         width: 100%;
+    }
+    
+    .calendar-days-grid {
+        gap: 0.15rem;
+    }
+    
+    .calendar-day {
+        padding: 0.35rem;
+        font-size: 0.8rem;
     }
 }
