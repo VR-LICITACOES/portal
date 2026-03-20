@@ -12,45 +12,43 @@ app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json());
 
-// ========== ARQUIVOS ESTÁTICOS ==========
+// Arquivos estáticos
 app.use(express.static(path.join(__dirname, 'apps', 'portal')));
 app.use('/precos', express.static(path.join(__dirname, 'apps', 'precos')));
 app.use('/fornecedores', express.static(path.join(__dirname, 'apps', 'fornecedores')));
 
-// ========== SUPABASE CLIENT ==========
+// Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ========== CRIAÇÃO AUTOMÁTICA DA TABELA FORNECEDORES ==========
+// ========== DIAGNÓSTICO DA TABELA FORNECEDORES ==========
 async function ensureFornecedoresTable() {
-  console.log('🛠️ Verificando/criando tabela fornecedores...');
   try {
-    // Tenta criar a tabela (se não existir)
-    const { error } = await supabase.rpc('exec_sql', {
-      sql_string: `
-        CREATE TABLE IF NOT EXISTS public.fornecedores (
-          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-          nome TEXT NOT NULL,
-          telefone TEXT,
-          celular TEXT,
-          email TEXT,
-          metodo_envio TEXT DEFAULT 'whatsapp' CHECK (metodo_envio IN ('whatsapp', 'email')),
-          timestamp TIMESTAMPTZ DEFAULT NOW()
-        );
-        ALTER TABLE public.fornecedores DISABLE ROW LEVEL SECURITY;
-      `
-    });
-    if (error) {
-      // Se a RPC não existir, tenta criar via consulta direta (menos elegante, mas funciona)
-      console.log('⚠️ RPC exec_sql não disponível, tentando criar tabela de outra forma...');
-      // Como não podemos executar SQL arbitrário facilmente, vamos confiar que a tabela já existe
-      // ou que o usuário a criou. Se não existir, a próxima consulta dará erro 500.
+    const { error } = await supabase
+      .from('fornecedores')
+      .select('id', { count: 'exact', head: true });
+    if (error && error.message.includes('relation "public.fornecedores" does not exist')) {
+      console.error('\n❌ Tabela "fornecedores" não existe! Execute este SQL no Supabase:\n');
+      console.error(`
+CREATE TABLE public.fornecedores (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    nome TEXT NOT NULL,
+    telefone TEXT,
+    celular TEXT,
+    email TEXT,
+    metodo_envio TEXT DEFAULT 'whatsapp' CHECK (metodo_envio IN ('whatsapp', 'email')),
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.fornecedores DISABLE ROW LEVEL SECURITY;
+      `);
+    } else if (error) {
+      console.error('❌ Erro ao verificar tabela fornecedores:', error);
     } else {
-      console.log('✅ Tabela fornecedores garantida.');
+      console.log('✅ Tabela fornecedores OK');
     }
-  } catch (err) {
-    console.error('❌ Erro ao criar tabela fornecedores:', err);
+  } catch (e) {
+    console.error('❌ Exceção ao verificar tabela:', e);
   }
 }
 ensureFornecedoresTable();
@@ -174,7 +172,7 @@ app.post('/api/logout', async (req, res) => {
   }
 });
 
-// ========== ROTAS DE API PARA PREÇOS (resumido, mas completo) ==========
+// ========== ROTAS DE API PARA PREÇOS (resumido) ==========
 app.get('/api/marcas', authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase.from('precos').select('marca').order('marca');
@@ -206,7 +204,7 @@ app.get('/api/precos', authenticate, async (req, res) => {
   }
 });
 
-// ========== ROTAS DE API PARA FORNECEDORES (com criação implícita) ==========
+// ========== ROTAS DE API PARA FORNECEDORES ==========
 app.get('/api/fornecedores', authenticate, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 50;
@@ -214,7 +212,6 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
   const { search } = req.query;
 
   try {
-    // Tenta a consulta – se falhar por tabela inexistente, tenta criar e depois consulta
     let query = supabase
       .from('fornecedores')
       .select('*', { count: 'exact' });
@@ -228,41 +225,13 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
       .order('nome')
       .range(offset, offset + limit - 1);
 
-    if (error && error.message.includes('relation "public.fornecedores" does not exist')) {
-      console.log('🛠️ Tabela fornecedores não existe. Criando agora...');
-      // Tenta criar a tabela
-      const createError = await supabase.rpc('exec_sql', {
-        sql_string: `
-          CREATE TABLE public.fornecedores (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            nome TEXT NOT NULL,
-            telefone TEXT,
-            celular TEXT,
-            email TEXT,
-            metodo_envio TEXT DEFAULT 'whatsapp' CHECK (metodo_envio IN ('whatsapp', 'email')),
-            timestamp TIMESTAMPTZ DEFAULT NOW()
-          );
-          ALTER TABLE public.fornecedores DISABLE ROW LEVEL SECURITY;
-        `
-      });
-      if (createError) {
-        console.error('❌ Falha ao criar tabela fornecedores:', createError);
-        return res.status(500).json({ error: 'Erro ao criar tabela de fornecedores' });
+    if (error) {
+      // Se o erro for de tabela inexistente, orienta o usuário
+      if (error.message.includes('relation "public.fornecedores" does not exist')) {
+        return res.status(500).json({ 
+          error: 'Tabela de fornecedores não existe. Execute o SQL fornecido nos logs do servidor.' 
+        });
       }
-      // Refaz a consulta
-      const retry = await supabase
-        .from('fornecedores')
-        .select('*', { count: 'exact' })
-        .order('nome')
-        .range(offset, offset + limit - 1);
-      if (retry.error) throw retry.error;
-      return res.json({
-        data: retry.data || [],
-        total: retry.count || 0,
-        page,
-        totalPages: Math.ceil((retry.count || 0) / limit)
-      });
-    } else if (error) {
       throw error;
     }
 
