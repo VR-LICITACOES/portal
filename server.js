@@ -143,12 +143,144 @@ app.post('/api/logout', async (req, res) => {
 });
 
 // ========== ROTAS DE API PARA PREÇOS ==========
-// (mantidas do código original, não repetido aqui por brevidade)
-// ... (cole aqui as rotas de /api/marcas, /api/precos etc.)
+app.get('/api/marcas', authenticate, async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('precos').select('marca').order('marca');
+    if (error) throw error;
+    const marcas = [...new Set(data.map(i => i.marca).filter(Boolean))].sort();
+    res.json(marcas);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar marcas' });
+  }
+});
+
+app.get('/api/precos', authenticate, async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = (page - 1) * limit;
+  const { marca, search } = req.query;
+  try {
+    let query = supabase.from('precos').select('*', { count: 'exact' });
+    if (marca && marca !== 'TODAS') query = query.eq('marca', marca);
+    if (search) {
+      const term = `%${search}%`;
+      query = query.or(`codigo.ilike.${term},descricao.ilike.${term},marca.ilike.${term}`);
+    }
+    const { data, error, count } = await query.order('marca').order('codigo').range(offset, offset + limit - 1);
+    if (error) throw error;
+    res.json({ data, total: count, page, totalPages: Math.ceil(count / limit) });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar preços' });
+  }
+});
+
+app.post('/api/precos', authenticate, async (req, res) => {
+  const { marca, codigo, preco, descricao } = req.body;
+  if (!marca || !codigo || !preco || !descricao) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
+  try {
+    const { data, error } = await supabase
+      .from('precos')
+      .insert([{ marca: marca.trim(), codigo: codigo.trim(), preco: parseFloat(preco), descricao: descricao.trim().toUpperCase(), timestamp: new Date().toISOString() }])
+      .select();
+    if (error) throw error;
+    res.status(201).json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao criar preço' });
+  }
+});
+
+app.put('/api/precos/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { marca, codigo, preco, descricao } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from('precos')
+      .update({ marca: marca.trim(), codigo: codigo.trim(), preco: parseFloat(preco), descricao: descricao.trim().toUpperCase(), timestamp: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    if (!data?.length) return res.status(404).json({ error: 'Preço não encontrado' });
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar preço' });
+  }
+});
+
+app.delete('/api/precos/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('precos').delete().eq('id', id);
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao deletar preço' });
+  }
+});
 
 // ========== ROTAS DE API PARA FORNECEDORES ==========
-// (mantidas do código original)
-// ... (cole aqui as rotas de fornecedores)
+app.get('/api/fornecedores', authenticate, async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = (page - 1) * limit;
+  const { search } = req.query;
+  try {
+    let query = supabase.from('fornecedores').select('*', { count: 'exact' });
+    if (search) {
+      const term = `%${search}%`;
+      query = query.or(`nome.ilike.${term},telefone.ilike.${term},celular.ilike.${term},email.ilike.${term}`);
+    }
+    const { data, error, count } = await query.order('nome').range(offset, offset + limit - 1);
+    if (error) throw error;
+    res.json({ data: data || [], total: count || 0, page, totalPages: Math.ceil((count || 0) / limit) });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar fornecedores' });
+  }
+});
+
+app.post('/api/fornecedores', authenticate, async (req, res) => {
+  const { nome, telefone, celular, email, metodo_envio } = req.body;
+  if (!nome) return res.status(400).json({ error: 'Nome obrigatório' });
+  try {
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .insert([{ nome: nome.trim(), telefone: telefone?.trim() || null, celular: celular?.trim() || null, email: email?.trim() || null, metodo_envio: metodo_envio || 'whatsapp', timestamp: new Date().toISOString() }])
+      .select();
+    if (error) throw error;
+    res.status(201).json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao criar fornecedor' });
+  }
+});
+
+app.put('/api/fornecedores/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { nome, telefone, celular, email, metodo_envio } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .update({ nome: nome?.trim(), telefone: telefone?.trim() || null, celular: celular?.trim() || null, email: email?.trim() || null, metodo_envio, timestamp: new Date().toISOString() })
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    if (!data?.length) return res.status(404).json({ error: 'Fornecedor não encontrado' });
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao atualizar fornecedor' });
+  }
+});
+
+app.delete('/api/fornecedores/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('fornecedores').delete().eq('id', id);
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao deletar fornecedor' });
+  }
+});
 
 // ========== ROTAS DE API PARA LICITAÇÕES ==========
 app.get('/api/licitacoes', authenticate, async (req, res) => {
@@ -198,7 +330,7 @@ app.delete('/api/licitacoes/:id', authenticate, async (req, res) => {
   res.status(204).send();
 });
 
-// ========== ROTAS DE API PARA ITENS DA LICITAÇÃO (tabela "itens") ==========
+// ========== ROTAS DE API PARA ITENS ==========
 app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
   const { id } = req.params;
   const { data, error } = await supabase
