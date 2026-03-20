@@ -25,6 +25,7 @@
                 </button>
             </div>
 
+            <!-- Search Bar -->
             <div class="search-bar-wrapper">
                 <div class="search-bar">
                     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -35,6 +36,7 @@
                 </div>
             </div>
 
+            <!-- Table Card -->
             <div class="card table-card">
                 <div id="fornecedoresContainer" style="overflow-x: auto;">
                     <table>
@@ -44,7 +46,7 @@
                                 <th>Telefone</th>
                                 <th>Celular</th>
                                 <th>E-mail</th>
-                                <th>Envio</th>
+                                <th>ENVIO COTAÇÃO</th>
                                 <th>Alteração</th>
                                 <th style="text-align: center;">Ações</th>
                             </tr>
@@ -83,16 +85,16 @@
                         <input type="email" id="modalEmail" placeholder="exemplo@dominio.com">
                     </div>
                     <div class="form-group">
-                        <label>Método de envio preferencial:</label>
-                        <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="radio" name="metodoEnvio" value="whatsapp" checked> WhatsApp (usar celular)
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="radio" name="metodoEnvio" value="email"> E-mail
-                            </label>
+                        <!-- Caixas de seleção para envio -->
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                            <div class="envio-option" data-value="whatsapp" onclick="selectEnvio(this)">
+                                <span>WhatsApp</span>
+                            </div>
+                            <div class="envio-option" data-value="email" onclick="selectEnvio(this)">
+                                <span>E-mail</span>
+                            </div>
                         </div>
-                        <p class="field-note">* O WhatsApp usará o número de celular cadastrado.</p>
+                        <input type="hidden" id="metodoEnvio" name="metodoEnvio" value="whatsapp">
                     </div>
                 </div>
                 <div class="modal-actions modal-actions-right">
