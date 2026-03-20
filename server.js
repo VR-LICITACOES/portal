@@ -13,15 +13,12 @@ app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json());
 
-// ========== ARQUIVOS ESTÁTICOS ==========
-// Portal
+// ========== ARQUIVOS ESTÁTICOS DAS APPS ==========
 app.use(express.static(path.join(__dirname, 'apps', 'portal')));
-// Preços
 app.use('/precos', express.static(path.join(__dirname, 'apps', 'precos')));
-// Fornecedores
 app.use('/fornecedores', express.static(path.join(__dirname, 'apps', 'fornecedores')));
 
-// ========== SUPABASE CLIENT ==========
+// ========== CONFIGURAÇÃO SUPABASE ==========
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -286,8 +283,6 @@ app.delete('/api/precos/:id', authenticate, async (req, res) => {
 });
 
 // ========== ROTAS DE API PARA FORNECEDORES ==========
-
-// GET /api/fornecedores – listagem paginada com busca
 app.get('/api/fornecedores', authenticate, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 50;
@@ -311,10 +306,10 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
     if (error) throw error;
 
     res.json({
-      data,
-      total: count,
+      data: data || [],
+      total: count || 0,
       page,
-      totalPages: Math.ceil(count / limit)
+      totalPages: Math.ceil((count || 0) / limit)
     });
   } catch (err) {
     console.error('Erro ao buscar fornecedores:', err);
@@ -322,7 +317,6 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/fornecedores – criar novo fornecedor
 app.post('/api/fornecedores', authenticate, async (req, res) => {
   const { nome, telefone, celular, email, metodo_envio } = req.body;
   if (!nome) {
@@ -337,7 +331,7 @@ app.post('/api/fornecedores', authenticate, async (req, res) => {
         telefone: telefone?.trim() || null,
         celular: celular?.trim() || null,
         email: email?.trim() || null,
-        metodo_envio: metodo_envio || 'whatsapp', // padrão
+        metodo_envio: metodo_envio || 'whatsapp',
         timestamp: new Date().toISOString()
       }])
       .select();
@@ -350,7 +344,6 @@ app.post('/api/fornecedores', authenticate, async (req, res) => {
   }
 });
 
-// PUT /api/fornecedores/:id – atualizar fornecedor
 app.put('/api/fornecedores/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { nome, telefone, celular, email, metodo_envio } = req.body;
@@ -380,7 +373,6 @@ app.put('/api/fornecedores/:id', authenticate, async (req, res) => {
   }
 });
 
-// DELETE /api/fornecedores/:id – excluir fornecedor
 app.delete('/api/fornecedores/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
