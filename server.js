@@ -4,47 +4,27 @@ const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs'); // Para verificar existência de arquivos
+const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 10000; // Render espera 10000
+const PORT = process.env.PORT || 10000;
 
 app.set('trust proxy', true);
 app.use(cors());
 app.use(express.json());
 
-// ========== CONFIGURAÇÃO SUPABASE ==========
+// ========== ARQUIVOS ESTÁTICOS ==========
+// Portal
+app.use(express.static(path.join(__dirname, 'apps', 'portal')));
+// Preços
+app.use('/precos', express.static(path.join(__dirname, 'apps', 'precos')));
+// Fornecedores
+app.use('/fornecedores', express.static(path.join(__dirname, 'apps', 'fornecedores')));
+
+// ========== SUPABASE CLIENT ==========
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-// ========== VERIFICAÇÃO DE ESTRUTURA (IMPORTANTE) ==========
-console.log('📁 Verificando estrutura de pastas:');
-const portalPath = path.join(__dirname, 'apps', 'portal');
-const precosPath = path.join(__dirname, 'apps', 'precos');
-
-if (fs.existsSync(portalPath)) {
-  console.log(`✅ Portal encontrado em: ${portalPath}`);
-  const files = fs.readdirSync(portalPath);
-  console.log('   Arquivos no portal:', files);
-} else {
-  console.error(`❌ Portal NÃO encontrado em: ${portalPath}`);
-}
-
-if (fs.existsSync(precosPath)) {
-  console.log(`✅ Preços encontrado em: ${precosPath}`);
-  const files = fs.readdirSync(precosPath);
-  console.log('   Arquivos em preços:', files);
-} else {
-  console.error(`❌ Preços NÃO encontrado em: ${precosPath}`);
-}
-
-// ========== ARQUIVOS ESTÁTICOS (SEM /public) ==========
-// Portal na raiz
-app.use(express.static(portalPath));
-
-// App Preços na rota /precos
-app.use('/precos', express.static(precosPath));
 
 // ========== RATE LIMITER ==========
 const limiter = rateLimit({
@@ -99,17 +79,14 @@ app.post('/api/login', limiter, async (req, res) => {
       .single();
 
     if (error || !user) {
-      console.log(`❌ Usuário não encontrado: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
     if (!user.is_active) {
-      console.log(`❌ Usuário inativo: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
     if (password !== user.password) {
-      console.log(`❌ Senha incorreta para: ${username}`);
       return res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
 
@@ -182,7 +159,7 @@ app.post('/api/logout', async (req, res) => {
   }
 });
 
-// ========== ROTAS DE API DA APLICAÇÃO PREÇOS ==========
+// ========== ROTAS DE API PARA PREÇOS ==========
 app.get('/api/marcas', authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -308,35 +285,133 @@ app.delete('/api/precos/:id', authenticate, async (req, res) => {
   }
 });
 
-// ========== ROTAS DE FALLBACK (SPA) ==========
-// Rota raiz: serve index.html do portal
+// ========== ROTAS DE API PARA FORNECEDORES ==========
+
+// GET /api/fornecedores – listagem paginada com busca
+app.get('/api/fornecedores', authenticate, async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = (page - 1) * limit;
+  const { search } = req.query;
+
+  try {
+    let query = supabase
+      .from('fornecedores')
+      .select('*', { count: 'exact' });
+
+    if (search) {
+      const term = `%${search}%`;
+      query = query.or(`nome.ilike.${term},telefone.ilike.${term},celular.ilike.${term},email.ilike.${term}`);
+    }
+
+    const { data, error, count } = await query
+      .order('nome')
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    res.json({
+      data,
+      total: count,
+      page,
+      totalPages: Math.ceil(count / limit)
+    });
+  } catch (err) {
+    console.error('Erro ao buscar fornecedores:', err);
+    res.status(500).json({ error: 'Erro ao buscar fornecedores' });
+  }
+});
+
+// POST /api/fornecedores – criar novo fornecedor
+app.post('/api/fornecedores', authenticate, async (req, res) => {
+  const { nome, telefone, celular, email, metodo_envio } = req.body;
+  if (!nome) {
+    return res.status(400).json({ error: 'Nome do fornecedor é obrigatório' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .insert([{
+        nome: nome.trim(),
+        telefone: telefone?.trim() || null,
+        celular: celular?.trim() || null,
+        email: email?.trim() || null,
+        metodo_envio: metodo_envio || 'whatsapp', // padrão
+        timestamp: new Date().toISOString()
+      }])
+      .select();
+
+    if (error) throw error;
+    res.status(201).json(data[0]);
+  } catch (err) {
+    console.error('Erro ao criar fornecedor:', err);
+    res.status(500).json({ error: 'Erro ao criar fornecedor' });
+  }
+});
+
+// PUT /api/fornecedores/:id – atualizar fornecedor
+app.put('/api/fornecedores/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { nome, telefone, celular, email, metodo_envio } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('fornecedores')
+      .update({
+        nome: nome?.trim(),
+        telefone: telefone?.trim() || null,
+        celular: celular?.trim() || null,
+        email: email?.trim() || null,
+        metodo_envio: metodo_envio,
+        timestamp: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select();
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Fornecedor não encontrado' });
+    }
+    res.json(data[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar fornecedor:', err);
+    res.status(500).json({ error: 'Erro ao atualizar fornecedor' });
+  }
+});
+
+// DELETE /api/fornecedores/:id – excluir fornecedor
+app.delete('/api/fornecedores/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('fornecedores')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar fornecedor:', err);
+    res.status(500).json({ error: 'Erro ao deletar fornecedor' });
+  }
+});
+
+// ========== ROTAS DE FALLBACK ==========
 app.get('/', (req, res) => {
-  const indexPath = path.join(portalPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).send('index.html do portal não encontrado');
-  }
+  res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html'));
 });
 
-// Rota /precos: serve index.html da app preços
 app.get('/precos', (req, res) => {
-  const indexPath = path.join(precosPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).send('index.html de preços não encontrado');
-  }
+  res.sendFile(path.join(__dirname, 'apps', 'precos', 'index.html'));
 });
 
-// Rota curinga: redireciona para o portal (SPA)
+app.get('/fornecedores', (req, res) => {
+  res.sendFile(path.join(__dirname, 'apps', 'fornecedores', 'index.html'));
+});
+
 app.get('*', (req, res) => {
-  const indexPath = path.join(portalPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(404).send('Página não encontrada');
-  }
+  res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html'));
 });
 
 // ========== INICIA O SERVIDOR ==========
