@@ -1,3 +1,4 @@
+// CONFIGURAÇÃO
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3002/api'
     : `${window.location.origin}/api`;
@@ -23,6 +24,8 @@ console.log('📍 API URL:', API_URL);
 document.addEventListener('DOMContentLoaded', () => {
     verificarAutenticacao();
 });
+
+// ─── AUTENTICAÇÃO ─────────────────────────────────────────────────────────────
 
 function verificarAutenticacao() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -54,6 +57,8 @@ function mostrarTelaAcessoNegado(mensagem = 'NÃO AUTORIZADO') {
     `;
 }
 
+// ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────────
+
 function inicializarApp() {
     carregarFornecedores();
 
@@ -73,6 +78,8 @@ function inicializarApp() {
         if (isOnline && !state.isLoading) carregarFornecedores(state.currentPage);
     }, 30000);
 }
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 function getHeaders() {
     const headers = { 'Accept': 'application/json' };
@@ -114,6 +121,8 @@ async function verificarConexao() {
         return false;
     }
 }
+
+// ─── CARREGAR FORNECEDORES ────────────────────────────────────────────────────
 
 async function carregarFornecedores(page = 1) {
     if (state.isLoading) return;
@@ -160,6 +169,7 @@ async function carregarFornecedores(page = 1) {
 }
 
 let searchDebounceTimer = null;
+
 function filterFornecedores() {
     state.searchTerm = document.getElementById('search').value.trim();
     clearTimeout(searchDebounceTimer);
@@ -168,16 +178,22 @@ function filterFornecedores() {
     }, 200);
 }
 
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+
 function renderFornecedores() {
-    const tbody = document.getElementById('fornecedoresTableBody');
-    if (!tbody) return;
+    const container = document.getElementById('fornecedoresTableBody');
+    if (!container) return;
 
     if (!state.fornecedores.length) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem;">Nenhum fornecedor encontrado</td></tr>`;
+        container.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem;">Nenhum fornecedor encontrado</td>
+            </tr>
+        `;
         return;
     }
 
-    tbody.innerHTML = state.fornecedores.map(f => {
+    container.innerHTML = state.fornecedores.map(f => {
         const metodo = f.metodo_envio === 'whatsapp' ? 'WhatsApp' : 'E-mail';
         return `
         <tr>
@@ -186,8 +202,8 @@ function renderFornecedores() {
             <td>${f.celular || '-'}</td>
             <td>${f.email || '-'}</td>
             <td>${metodo}</td>
-            <td style="color: var(--text-secondary); font-size:0.85rem;">${getTimeAgo(f.timestamp)}</td>
-            <td class="actions-cell">
+            <td style="color: var(--text-secondary); font-size: 0.85rem;">${getTimeAgo(f.timestamp)}</td>
+            <td class="actions-cell" style="text-align: center;">
                 <button onclick="editFornecedor('${f.id}')" class="action-btn edit">Editar</button>
                 <button onclick="deleteFornecedor('${f.id}')" class="action-btn delete">Excluir</button>
             </td>
@@ -219,8 +235,9 @@ function renderPaginacao() {
     }
 
     const botoesHTML = paginas.map(p =>
-        p === '...' ? '<span class="pag-ellipsis">…</span>' :
-        `<button class="pag-btn ${p === atual ? 'pag-btn-active' : ''}" onclick="carregarFornecedores(${p})">${p}</button>`
+        p === '...'
+            ? `<span class="pag-ellipsis">…</span>`
+            : `<button class="pag-btn ${p === atual ? 'pag-btn-active' : ''}" onclick="carregarFornecedores(${p})">${p}</button>`
     ).join('');
 
     const div = document.createElement('div');
@@ -239,46 +256,14 @@ function renderPaginacao() {
     tableCard.appendChild(div);
 }
 
-function getTimeAgo(timestamp) {
-    if (!timestamp) return 'Sem data';
-    const now = new Date();
-    const past = new Date(timestamp);
-    const diff = Math.floor((now - past) / 1000);
-    if (diff < 60) return `${diff}s`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}min`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
-    return past.toLocaleDateString('pt-BR');
-}
+// ─── FORMULÁRIO ───────────────────────────────────────────────────────────────
 
-// Abas do modal
-function initTabs() {
-    const tabButtons = document.querySelectorAll('.tab-button');
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-        });
-    });
-}
-
-// Formulário
-window.toggleForm = function() {
-    showFormModal(null);
-};
+window.toggleForm = function() { showFormModal(null); };
 
 function showFormModal(editingId = null) {
     const isEditing = editingId !== null;
     const fornecedor = isEditing ? state.fornecedores.find(f => f.id === editingId) : null;
 
-    // Remove modais antigos
-    const oldModal = document.getElementById('formModal');
-    if (oldModal) oldModal.remove();
-
-    // Insere o HTML do modal (já está no index, mas vamos garantir que não haja duplicatas)
-    // Na verdade o modal já existe no HTML, apenas vamos preenchê-lo e exibi-lo
     const modal = document.getElementById('formModal');
     if (!modal) return;
 
@@ -292,27 +277,16 @@ function showFormModal(editingId = null) {
     // Radio button
     const radios = document.querySelectorAll('input[name="metodoEnvio"]');
     radios.forEach(r => {
-        if (r.value === (fornecedor?.metodo_envio || 'whatsapp')) {
-            r.checked = true;
-        }
+        r.checked = (r.value === (fornecedor?.metodo_envio || 'whatsapp'));
     });
 
-    // Reset tabs para "Geral"
-    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-    document.querySelector('.tab-button[data-tab="geral"]').classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('tab-geral').classList.add('active');
-
     modal.classList.add('show');
-    initTabs(); // re-inicializa as abas
 }
 
-window.closeFormModal = function() {
+function closeFormModal() {
     const modal = document.getElementById('formModal');
-    if (modal) {
-        modal.classList.remove('show');
-    }
-};
+    if (modal) modal.classList.remove('show');
+}
 
 async function handleSubmit(event) {
     event.preventDefault();
@@ -367,23 +341,22 @@ async function handleSubmit(event) {
     }
 }
 
-window.editFornecedor = function(id) {
-    showFormModal(id);
-};
+// ─── EDITAR / EXCLUIR ─────────────────────────────────────────────────────────
 
+window.editFornecedor = function(id) { showFormModal(id); };
 window.deleteFornecedor = function(id) {
     state.deleteId = id;
     const modal = document.getElementById('deleteModal');
     if (modal) modal.classList.add('show');
 };
 
-window.closeDeleteModal = function() {
+function closeDeleteModal() {
     const modal = document.getElementById('deleteModal');
     if (modal) modal.classList.remove('show');
     state.deleteId = null;
-};
+}
 
-window.confirmDelete = async function() {
+async function confirmDelete() {
     const id = state.deleteId;
     if (!id) return;
     closeDeleteModal();
@@ -417,11 +390,24 @@ window.confirmDelete = async function() {
     } catch (error) {
         showToast(error.name === 'AbortError' ? 'Timeout: Operação demorou muito' : 'Erro ao excluir fornecedor', 'error');
     }
-};
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+
+function getTimeAgo(timestamp) {
+    if (!timestamp) return 'Sem data';
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diff = Math.floor((now - past) / 1000);
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}min`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
+    return past.toLocaleDateString('pt-BR');
+}
 
 function showToast(message, type = 'success') {
-    const existing = document.querySelectorAll('.floating-message');
-    existing.forEach(m => m.remove());
+    document.querySelectorAll('.floating-message').forEach(m => m.remove());
     const div = document.createElement('div');
     div.className = `floating-message ${type}`;
     div.textContent = message;
@@ -435,3 +421,5 @@ function showToast(message, type = 'success') {
 // Expor funções globalmente
 window.filterFornecedores = filterFornecedores;
 window.carregarFornecedores = carregarFornecedores;
+window.confirmDelete = confirmDelete;
+window.closeDeleteModal = closeDeleteModal;
