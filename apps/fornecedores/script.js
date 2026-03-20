@@ -218,7 +218,18 @@ function getTimeAgo(ts) {
     return new Date(ts).toLocaleDateString('pt-BR');
 }
 
+// ========== NOVAS FUNÇÕES PARA AS CAIXAS DE SELEÇÃO ==========
+function selectEnvio(element) {
+    document.querySelectorAll('.envio-option').forEach(opt => opt.classList.remove('selected'));
+    element.classList.add('selected');
+    document.getElementById('metodoEnvio').value = element.dataset.value;
+}
+
+window.selectEnvio = selectEnvio;
+
+// ========== FORMULÁRIO ==========
 window.toggleForm = () => showFormModal(null);
+
 function showFormModal(editId = null) {
     const isEdit = editId !== null;
     const f = isEdit ? state.fornecedores.find(f => f.id === editId) : null;
@@ -230,9 +241,21 @@ function showFormModal(editId = null) {
     document.getElementById('modalTelefone').value = f?.telefone || '';
     document.getElementById('modalCelular').value = f?.celular || '';
     document.getElementById('modalEmail').value = f?.email || '';
-    document.querySelectorAll('input[name="metodoEnvio"]').forEach(r => r.checked = r.value === (f?.metodo_envio || 'whatsapp'));
+
+    // Marca a opção de envio
+    const metodo = f?.metodo_envio || 'whatsapp';
+    document.getElementById('metodoEnvio').value = metodo;
+    document.querySelectorAll('.envio-option').forEach(opt => {
+        if (opt.dataset.value === metodo) {
+            opt.classList.add('selected');
+        } else {
+            opt.classList.remove('selected');
+        }
+    });
+
     modal.classList.add('show');
 }
+
 window.closeFormModal = () => document.getElementById('formModal')?.classList.remove('show');
 
 async function handleSubmit(e) {
@@ -243,7 +266,7 @@ async function handleSubmit(e) {
         telefone: document.getElementById('modalTelefone').value.trim() || null,
         celular: document.getElementById('modalCelular').value.trim() || null,
         email: document.getElementById('modalEmail').value.trim() || null,
-        metodo_envio: document.querySelector('input[name="metodoEnvio"]:checked')?.value || 'whatsapp'
+        metodo_envio: document.getElementById('metodoEnvio').value
     };
     if (!data.nome) return showToast('Nome obrigatório', 'error');
     if (!isOnline) return showToast('Offline', 'error') || closeFormModal();
@@ -307,5 +330,6 @@ function showToast(msg, tipo = 'success') {
     }, 3000);
 }
 
+// Expor funções globalmente
 window.filterFornecedores = filterFornecedores;
 window.carregarFornecedores = carregarFornecedores;
