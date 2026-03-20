@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fornecedores</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-content">
+        <div class="container">
+            <div class="header">
+                <div class="header-left">
+                    <h1>Fornecedores</h1>
+                    <div id="connectionStatus" class="connection-status offline">
+                        <span class="status-dot"></span>
+                    </div>
+                </div>
+                <button onclick="toggleForm()" class="btn-new-order-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Novo Fornecedor
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-bar-wrapper">
+                <div class="search-bar">
+                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="search" placeholder="Buscar por nome, telefone, celular ou e-mail..." oninput="filterFornecedores()">
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card table-card">
+                <div id="fornecedoresContainer" style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Telefone</th>
+                                <th>Celular</th>
+                                <th>E-mail</th>
+                                <th>Envio</th>
+                                <th>Alteração</th>
+                                <th style="text-align: center;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fornecedoresTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Formulário (com abas) -->
+    <div class="modal-overlay" id="formModal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Novo Fornecedor</h3>
+                <button class="close-modal" onclick="closeFormModal()">✕</button>
+            </div>
+            <form id="modalFornecedorForm" onsubmit="handleSubmit(event)">
+                <input type="hidden" id="modalEditId">
+                
+                <!-- Abas -->
+                <div class="tabs">
+                    <div class="tab-buttons">
+                        <button type="button" class="tab-button active" data-tab="geral">Geral</button>
+                        <button type="button" class="tab-button" data-tab="cotacao">Cotação</button>
+                    </div>
+                    
+                    <!-- Aba Geral -->
+                    <div class="tab-content active" id="tab-geral">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="modalNome">Nome *</label>
+                                <input type="text" id="modalNome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="modalTelefone">Telefone</label>
+                                <input type="text" id="modalTelefone" placeholder="(00) 0000-0000">
+                            </div>
+                            <div class="form-group">
+                                <label for="modalCelular">Celular</label>
+                                <input type="text" id="modalCelular" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="form-group">
+                                <label for="modalEmail">E-mail</label>
+                                <input type="email" id="modalEmail" placeholder="exemplo@dominio.com">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Aba Cotação -->
+                    <div class="tab-content" id="tab-cotacao">
+                        <div class="form-group">
+                            <label>Método de envio preferencial:</label>
+                            <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="radio" name="metodoEnvio" value="whatsapp" checked> WhatsApp (usar celular)
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="radio" name="metodoEnvio" value="email"> E-mail
+                                </label>
+                            </div>
+                            <p class="field-note">* O WhatsApp usará o número de celular cadastrado.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions modal-actions-right">
+                    <button type="submit" class="save">Salvar</button>
+                    <button type="button" onclick="closeFormModal()" class="danger">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal-overlay" id="deleteModal" style="display: none;">
+        <div class="modal-content modal-delete">
+            <button class="close-modal" onclick="closeDeleteModal()">✕</button>
+            <div class="modal-message-delete">Tem certeza que deseja excluir este fornecedor?</div>
+            <div class="modal-actions modal-actions-no-border">
+                <button type="button" onclick="confirmDelete()" class="danger">Sim</button>
+                <button type="button" onclick="closeDeleteModal()" class="danger">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
