@@ -203,7 +203,7 @@ function renderFornecedores() {
             <td>${f.email || '-'}</td>
             <td>${metodo}</td>
             <td style="color: var(--text-secondary); font-size: 0.85rem;">${getTimeAgo(f.timestamp)}</td>
-            <td class="actions-cell" style="text-align: center;">
+            <td class="actions-cell">
                 <button onclick="editFornecedor('${f.id}')" class="action-btn edit">Editar</button>
                 <button onclick="deleteFornecedor('${f.id}')" class="action-btn delete">Excluir</button>
             </td>
@@ -274,7 +274,6 @@ function showFormModal(editingId = null) {
     document.getElementById('modalCelular').value = fornecedor?.celular || '';
     document.getElementById('modalEmail').value = fornecedor?.email || '';
 
-    // Radio button
     const radios = document.querySelectorAll('input[name="metodoEnvio"]');
     radios.forEach(r => {
         r.checked = (r.value === (fornecedor?.metodo_envio || 'whatsapp'));
