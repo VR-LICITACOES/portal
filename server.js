@@ -150,6 +150,7 @@ app.get('/api/marcas', authenticate, async (req, res) => {
     const marcas = [...new Set(data.map(i => i.marca).filter(Boolean))].sort();
     res.json(marcas);
   } catch (err) {
+    console.error('Erro ao buscar marcas:', err);
     res.status(500).json({ error: 'Erro ao buscar marcas' });
   }
 });
@@ -170,6 +171,7 @@ app.get('/api/precos', authenticate, async (req, res) => {
     if (error) throw error;
     res.json({ data, total: count, page, totalPages: Math.ceil(count / limit) });
   } catch (err) {
+    console.error('Erro ao buscar preços:', err);
     res.status(500).json({ error: 'Erro ao buscar preços' });
   }
 });
@@ -187,6 +189,7 @@ app.post('/api/precos', authenticate, async (req, res) => {
     if (error) throw error;
     res.status(201).json(data[0]);
   } catch (err) {
+    console.error('Erro ao criar preço:', err);
     res.status(500).json({ error: 'Erro ao criar preço' });
   }
 });
@@ -204,6 +207,7 @@ app.put('/api/precos/:id', authenticate, async (req, res) => {
     if (!data?.length) return res.status(404).json({ error: 'Preço não encontrado' });
     res.json(data[0]);
   } catch (err) {
+    console.error('Erro ao atualizar preço:', err);
     res.status(500).json({ error: 'Erro ao atualizar preço' });
   }
 });
@@ -215,6 +219,7 @@ app.delete('/api/precos/:id', authenticate, async (req, res) => {
     if (error) throw error;
     res.status(204).send();
   } catch (err) {
+    console.error('Erro ao deletar preço:', err);
     res.status(500).json({ error: 'Erro ao deletar preço' });
   }
 });
@@ -235,6 +240,7 @@ app.get('/api/fornecedores', authenticate, async (req, res) => {
     if (error) throw error;
     res.json({ data: data || [], total: count || 0, page, totalPages: Math.ceil((count || 0) / limit) });
   } catch (err) {
+    console.error('Erro ao buscar fornecedores:', err);
     res.status(500).json({ error: 'Erro ao buscar fornecedores' });
   }
 });
@@ -250,6 +256,7 @@ app.post('/api/fornecedores', authenticate, async (req, res) => {
     if (error) throw error;
     res.status(201).json(data[0]);
   } catch (err) {
+    console.error('Erro ao criar fornecedor:', err);
     res.status(500).json({ error: 'Erro ao criar fornecedor' });
   }
 });
@@ -267,6 +274,7 @@ app.put('/api/fornecedores/:id', authenticate, async (req, res) => {
     if (!data?.length) return res.status(404).json({ error: 'Fornecedor não encontrado' });
     res.json(data[0]);
   } catch (err) {
+    console.error('Erro ao atualizar fornecedor:', err);
     res.status(500).json({ error: 'Erro ao atualizar fornecedor' });
   }
 });
@@ -278,113 +286,168 @@ app.delete('/api/fornecedores/:id', authenticate, async (req, res) => {
     if (error) throw error;
     res.status(204).send();
   } catch (err) {
+    console.error('Erro ao deletar fornecedor:', err);
     res.status(500).json({ error: 'Erro ao deletar fornecedor' });
   }
 });
 
 // ========== ROTAS DE API PARA LICITAÇÕES ==========
 app.get('/api/licitacoes', authenticate, async (req, res) => {
-  const { mes, ano } = req.query;
-  let query = supabase.from('licitacoes').select('*', { count: 'exact' });
-  if (mes && ano) {
-    const startDate = new Date(ano, mes-1, 1).toISOString().split('T')[0];
-    const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
-    query = query.gte('data', startDate).lte('data', endDate);
+  try {
+    const { mes, ano } = req.query;
+    console.log(`[LICITACOES] Requisição recebida - mes: ${mes}, ano: ${ano}, user: ${req.user?.username}`);
+
+    let query = supabase.from('licitacoes').select('*', { count: 'exact' });
+    if (mes && ano) {
+      const startDate = new Date(ano, mes - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(ano, mes, 0).toISOString().split('T')[0];
+      query = query.gte('data', startDate).lte('data', endDate);
+    }
+    query = query.order('data', { ascending: false });
+
+    const { data, error, count } = await query;
+    if (error) {
+      console.error('[LICITACOES] Erro na consulta:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    console.log(`[LICITACOES] Retornando ${data?.length || 0} registros`);
+    res.json(data);
+  } catch (err) {
+    console.error('[LICITACOES] Erro inesperado:', err);
+    res.status(500).json({ error: 'Erro interno ao buscar licitações' });
   }
-  query = query.order('data', { ascending: false });
-  const { data, error, count } = await query;
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
 });
 
 app.post('/api/licitacoes', authenticate, async (req, res) => {
-  const { numero_proposta, data, hora, uf, status = 'ABERTA' } = req.body;
-  if (!numero_proposta || !data) return res.status(400).json({ error: 'Número e data obrigatórios' });
-  const { data: inserted, error } = await supabase
-    .from('licitacoes')
-    .insert({ numero_proposta, data, hora, uf, status })
-    .select();
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json(inserted[0]);
+  try {
+    const { numero_proposta, data, hora, uf, status = 'ABERTA' } = req.body;
+    if (!numero_proposta || !data) {
+      return res.status(400).json({ error: 'Número e data obrigatórios' });
+    }
+    const { data: inserted, error } = await supabase
+      .from('licitacoes')
+      .insert({ numero_proposta, data, hora, uf, status })
+      .select();
+    if (error) throw error;
+    res.status(201).json(inserted[0]);
+  } catch (err) {
+    console.error('[LICITACOES] Erro ao criar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/licitacoes/:id', authenticate, async (req, res) => {
-  const { id } = req.params;
-  const updates = req.body;
-  const { data, error } = await supabase
-    .from('licitacoes')
-    .update(updates)
-    .eq('id', id)
-    .select();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data[0]);
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const { data, error } = await supabase
+      .from('licitacoes')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err) {
+    console.error('[LICITACOES] Erro ao atualizar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/licitacoes/:id', authenticate, async (req, res) => {
-  const { id } = req.params;
-  const { error } = await supabase
-    .from('licitacoes')
-    .delete()
-    .eq('id', id);
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(204).send();
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('licitacoes')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    console.error('[LICITACOES] Erro ao deletar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ========== ROTAS DE API PARA ITENS ==========
 app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
-  const { id } = req.params;
-  const { data, error } = await supabase
-    .from('itens')
-    .select('*')
-    .eq('licitacao_id', id)
-    .order('numero');
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('itens')
+      .select('*')
+      .eq('licitacao_id', id)
+      .order('numero');
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    console.error('[ITENS] Erro ao listar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
-  const { id } = req.params;
-  const item = req.body;
-  item.licitacao_id = id;
-  const { data, error } = await supabase
-    .from('itens')
-    .insert(item)
-    .select();
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json(data[0]);
+  try {
+    const { id } = req.params;
+    const item = req.body;
+    item.licitacao_id = id;
+    const { data, error } = await supabase
+      .from('itens')
+      .insert(item)
+      .select();
+    if (error) throw error;
+    res.status(201).json(data[0]);
+  } catch (err) {
+    console.error('[ITENS] Erro ao criar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/licitacoes/:id/itens/:itemId', authenticate, async (req, res) => {
-  const { itemId } = req.params;
-  const updates = req.body;
-  const { data, error } = await supabase
-    .from('itens')
-    .update(updates)
-    .eq('id', itemId)
-    .select();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data[0]);
+  try {
+    const { itemId } = req.params;
+    const updates = req.body;
+    const { data, error } = await supabase
+      .from('itens')
+      .update(updates)
+      .eq('id', itemId)
+      .select();
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err) {
+    console.error('[ITENS] Erro ao atualizar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/licitacoes/:id/itens/:itemId', authenticate, async (req, res) => {
-  const { itemId } = req.params;
-  const { error } = await supabase
-    .from('itens')
-    .delete()
-    .eq('id', itemId);
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(204).send();
+  try {
+    const { itemId } = req.params;
+    const { error } = await supabase
+      .from('itens')
+      .delete()
+      .eq('id', itemId);
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    console.error('[ITENS] Erro ao deletar:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/licitacoes/:id/itens/delete-multiple', authenticate, async (req, res) => {
-  const { ids } = req.body;
-  if (!ids || !ids.length) return res.status(400).json({ error: 'Nenhum ID fornecido' });
-  const { error } = await supabase
-    .from('itens')
-    .delete()
-    .in('id', ids);
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(204).send();
+  try {
+    const { ids } = req.body;
+    if (!ids || !ids.length) return res.status(400).json({ error: 'Nenhum ID fornecido' });
+    const { error } = await supabase
+      .from('itens')
+      .delete()
+      .in('id', ids);
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    console.error('[ITENS] Erro ao deletar múltiplos:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ========== ROTAS DE FALLBACK ==========
