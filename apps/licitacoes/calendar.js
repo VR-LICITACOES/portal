@@ -1,5 +1,5 @@
 // ============================================
-// CALENDAR MODAL FUNCTIONALITY (dias do mês)
+// CALENDAR MODAL – EXIBE APENAS DIAS COM REGISTROS
 // ============================================
 
 let calendarYear = new Date().getFullYear();
@@ -36,7 +36,7 @@ function changeCalendarMonth(direction) {
 
 function renderCalendarDays() {
     const yearMonthElement = document.getElementById('calendarYearMonth');
-    const daysContainer = document.getElementById('calendarDays');
+    const daysContainer = document.getElementById('calendarDaysList');
     
     if (!yearMonthElement || !daysContainer) return;
     
@@ -47,44 +47,27 @@ function renderCalendarDays() {
     
     yearMonthElement.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
     
-    // Obter dias que têm registros
-    const diasComRegistros = new Set();
-    licitacoes.forEach(l => {
-        if (l.data) {
-            const data = new Date(l.data);
-            if (data.getFullYear() === calendarYear && data.getMonth() === calendarMonth) {
-                diasComRegistros.add(data.getDate());
-            }
-        }
+    // Filtrar licitações do mês/ano selecionado
+    const licitacoesDoMes = licitacoes.filter(l => {
+        if (!l.data) return false;
+        const data = new Date(l.data);
+        return data.getFullYear() === calendarYear && data.getMonth() === calendarMonth;
     });
     
-    // Gerar grade de dias
-    const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
-    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    // Extrair dias únicos ordenados
+    const diasUnicos = [...new Set(licitacoesDoMes.map(l => new Date(l.data).getDate()))];
+    diasUnicos.sort((a, b) => a - b);
     
-    let html = '<div class="calendar-weekdays">';
-    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(day => {
-        html += `<div class="calendar-weekday">${day}</div>`;
+    // Construir lista de dias
+    if (diasUnicos.length === 0) {
+        daysContainer.innerHTML = '<div style="text-align:center; padding:1rem; color: var(--text-secondary);">Nenhuma proposta neste mês</div>';
+        return;
+    }
+    
+    let html = '';
+    diasUnicos.forEach(day => {
+        html += `<div class="calendar-day-item" onclick="selectDay(${day})">${day}</div>`;
     });
-    html += '</div><div class="calendar-days-grid">';
-    
-    // Dias vazios do início
-    for (let i = 0; i < firstDay; i++) {
-        html += '<div class="calendar-day empty"></div>';
-    }
-    
-    // Dias do mês
-    for (let d = 1; d <= daysInMonth; d++) {
-        const hasRecord = diasComRegistros.has(d);
-        const isToday = (calendarYear === new Date().getFullYear() && 
-                         calendarMonth === new Date().getMonth() && 
-                         d === new Date().getDate());
-        
-        html += `<div class="calendar-day ${hasRecord ? 'has-record' : ''} ${isToday ? 'today' : ''}" 
-                      onclick="selectDay(${d})">${d}</div>`;
-    }
-    
-    html += '</div>';
     daysContainer.innerHTML = html;
 }
 
@@ -108,3 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Função para atualizar o calendário se estiver aberto (chamada após carregar licitações)
+function refreshCalendarIfOpen() {
+    const modal = document.getElementById('calendarModal');
+    if (modal && modal.classList.contains('show')) {
+        renderCalendarDays();
+    }
+}
