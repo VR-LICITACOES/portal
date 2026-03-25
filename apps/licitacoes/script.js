@@ -143,6 +143,8 @@ async function loadLicitacoes() {
         licitacoes = await res.json();
         updateDisplay();
         verificarPrazosVencidos();
+        // Atualizar calendário se estiver aberto
+        if (typeof refreshCalendarIfOpen === 'function') refreshCalendarIfOpen();
     } catch (err) {
         if (err.name !== 'AbortError') console.error('Erro ao carregar licitações:', err);
     } finally {
@@ -476,8 +478,7 @@ function mostrarTelaItens() {
 }
 
 // ========== ITENS CRUD (mantido do código anterior) ==========
-// ... (manter todas as funções de itens do script.js anterior)
-// As funções de itens (carregarItens, renderItens, adicionarItem, editarItem, etc.) são as mesmas já fornecidas
+// ... (as funções de itens permanecem iguais; não listadas aqui para brevidade)
 
 // ========== UTILITÁRIOS ==========
 function showToast(msg, tipo = 'success') {
