@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Licitações - I.R. Comércio</title>
     <link rel="icon" type="image/png" href="/I.R.-COMERCIO-E-MATERIAIS-ELETRICOS-PRETO.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,13 +24,7 @@
                         <span class="status-dot"></span>
                     </div>
                 </div>
-                <button onclick="openFormModal()" class="btn-new-order-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Nova Proposta
-                </button>
+                <!-- Botão azul removido -->
             </div>
 
             <!-- DASHBOARD CARDS -->
@@ -57,8 +52,8 @@
                         <div class="stat-label">Enviadas</div>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon-warning-light" id="abertasCard">
+                <div class="stat-card" id="abertasCard">
+                    <div class="stat-icon stat-icon-warning-light">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -88,6 +83,14 @@
             <!-- SEARCH BAR COM FILTROS -->
             <div class="search-bar-wrapper">
                 <div class="search-bar">
+                    <!-- Botão + Nova Proposta -->
+                    <button onclick="openFormModal()" class="btn-new-proposal-icon" title="Nova Proposta">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+
                     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
@@ -139,7 +142,7 @@
                 </div>
             </div>
 
-            <!-- CALENDAR MODAL (seleção por dias do mês) -->
+            <!-- CALENDAR MODAL (dias com registros) -->
             <div class="calendar-modal" id="calendarModal">
                 <div class="calendar-content">
                     <div class="calendar-header">
@@ -155,7 +158,9 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="calendar-days" id="calendarDays"></div>
+                    <div class="calendar-days-list" id="calendarDaysList">
+                        <!-- Lista de dias com registros será inserida aqui -->
+                    </div>
                 </div>
             </div>
 
