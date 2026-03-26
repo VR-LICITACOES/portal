@@ -7,7 +7,7 @@ let licitacoes = [];
 let itens = [];
 let currentLicitacaoId = null;
 let editingId = null;
-let editingItemId = null;           // para edição de item
+let editingItemId = null;
 let isOnline = false;
 let sessionToken = null;
 let consecutive401Count = 0;
@@ -18,7 +18,7 @@ let currentFetchController = null;
 let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
 
-// Array para armazenar os IDs das licitações selecionadas para exclusão em massa
+// Seleção em massa
 let selectedLicitacoes = new Set();
 
 console.log('🚀 Licitações iniciada');
@@ -169,7 +169,6 @@ function updateStats() {
     document.getElementById('totalAbertas').textContent = abertas;
     document.getElementById('totalVencidas').textContent = vencidas;
     
-    // Adiciona badge de alerta se houver vencidas
     const card = document.getElementById('prazoVencidoCard');
     if (vencidas > 0) {
         card.classList.add('has-alert');
@@ -223,7 +222,6 @@ function renderLicitacoes(lista) {
             </td>
         </tr>
     `).join('');
-    // Atualizar visibilidade do botão "Excluir selecionados"
     const btnExcluir = document.getElementById('btnExcluirSelecionados');
     if (btnExcluir) {
         btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
@@ -239,7 +237,6 @@ function toggleSelecionarLicitacao(id, isChecked) {
     }
     const btnExcluir = document.getElementById('btnExcluirSelecionados');
     if (btnExcluir) btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
-    // Atualizar checkbox "selecionar todos"
     const selectAll = document.getElementById('selectAllCheckbox');
     if (selectAll) {
         const allCheckboxes = document.querySelectorAll('.licitacao-checkbox');
@@ -270,7 +267,6 @@ async function excluirSelecionados() {
     if (!isOnline) { showToast('Sistema offline', 'error'); return; }
     const ids = Array.from(selectedLicitacoes);
     try {
-        // Excluir uma por uma (ou em lote se a API suportar)
         for (const id of ids) {
             const res = await fetch(`${API_URL}/licitacoes/${id}`, {
                 method: 'DELETE',
@@ -283,12 +279,10 @@ async function excluirSelecionados() {
             }
             if (!res.ok) throw new Error(`Erro ao excluir proposta ${id}`);
         }
-        // Atualizar lista local
         licitacoes = licitacoes.filter(l => !selectedLicitacoes.has(l.id));
         selectedLicitacoes.clear();
         showToast(`${ids.length} proposta(s) excluída(s)`, 'success');
         updateDisplay();
-        // Limpar seleção na interface
         const selectAll = document.getElementById('selectAllCheckbox');
         if (selectAll) selectAll.checked = false;
         const btnExcluir = document.getElementById('btnExcluirSelecionados');
@@ -426,7 +420,6 @@ function renderVencidosModal(vencidas) {
         `).join('');
     }
     
-    // Paginação
     const pagContainer = document.getElementById('vencidosPaginacao');
     if (pagContainer && totalPages > 1) {
         let pagHtml = '<div class="paginacao-btns">';
@@ -457,7 +450,7 @@ function fecharModalVencidos() {
 
 // ========== VERIFICAR PRAZOS VENCIDOS ==========
 function verificarPrazosVencidos() {
-    updateStats(); // atualiza o badge
+    updateStats();
 }
 
 // ========== VISUALIZAR PROPOSTA (abre tela de itens) ==========
@@ -632,7 +625,6 @@ function formatMoney(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// Abrir modal para adicionar/editar item
 function adicionarItem() {
     editingItemId = null;
     document.getElementById('itemModalTitle').textContent = 'Adicionar Item';
@@ -683,7 +675,6 @@ async function salvarItem() {
         showToast('Descrição e quantidade são obrigatórios', 'error');
         return;
     }
-    // Calcular totais
     itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
     itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
     
@@ -694,7 +685,6 @@ async function salvarItem() {
     try {
         let url, method;
         if (editingItemId !== null && typeof editingItemId === 'number' && itens[editingItemId] && itens[editingItemId].id) {
-            // Editar item existente (com id real)
             url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${itens[editingItemId].id}`;
             method = 'PUT';
         } else {
@@ -728,7 +718,6 @@ async function salvarItem() {
     }
 }
 
-// Funções auxiliares para itens (filtro, sincronizar, etc.)
 function filterItens() {
     renderItens();
 }
