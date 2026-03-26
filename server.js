@@ -240,9 +240,27 @@ app.delete('/api/licitacoes/:id', authenticate, async (req, res) => {
 });
 
 // ========== ROTAS DE ITENS ==========
+
+// Filtra apenas os campos que existem na tabela itens
+function sanitizeItem(body) {
+    return {
+        numero:         body.numero         ?? null,
+        descricao:      body.descricao       ?? null,
+        quantidade:     body.quantidade      ?? null,
+        unidade:        body.unidade         ?? null,
+        marca:          body.marca           ?? null,
+        modelo:         body.modelo          ?? null,
+        custo_unitario: body.custo_unitario  ?? null,
+        custo_total:    body.custo_total     ?? null,
+        venda_unitario: body.venda_unitario  ?? null,
+        venda_total:    body.venda_total     ?? null,
+    };
+}
+
 app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
+        console.log(`[ITENS] GET licitacao_id=${id}`);
 
         const { data, error } = await supabase
             .from('itens')
@@ -250,10 +268,14 @@ app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
             .eq('licitacao_id', id)
             .order('numero', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[ITENS] Supabase error:', JSON.stringify(error));
+            return res.status(500).json({ error: error.message, details: error });
+        }
+        console.log(`[ITENS] Retornando ${data?.length || 0} itens`);
         res.json(data || []);
     } catch (err) {
-        console.error('[ITENS] Erro ao listar:', err);
+        console.error('[ITENS] Erro inesperado ao listar:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -261,15 +283,19 @@ app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
 app.post('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
-        const item = { ...req.body, licitacao_id: id };
+        const item = { ...sanitizeItem(req.body), licitacao_id: id };
+        console.log('[ITENS] POST item:', JSON.stringify(item));
         const { data, error } = await supabase
             .from('itens')
             .insert(item)
             .select();
-        if (error) throw error;
+        if (error) {
+            console.error('[ITENS] Supabase error ao criar:', JSON.stringify(error));
+            return res.status(500).json({ error: error.message, details: error });
+        }
         res.status(201).json(data[0]);
     } catch (err) {
-        console.error('[ITENS] Erro ao criar:', err);
+        console.error('[ITENS] Erro inesperado ao criar:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -277,16 +303,20 @@ app.post('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
 app.put('/api/licitacoes/:id/itens/:itemId', authenticate, async (req, res) => {
     try {
         const { itemId } = req.params;
-        const updates = req.body;
+        const updates = sanitizeItem(req.body);
+        console.log('[ITENS] PUT itemId:', itemId, JSON.stringify(updates));
         const { data, error } = await supabase
             .from('itens')
             .update(updates)
             .eq('id', itemId)
             .select();
-        if (error) throw error;
+        if (error) {
+            console.error('[ITENS] Supabase error ao atualizar:', JSON.stringify(error));
+            return res.status(500).json({ error: error.message, details: error });
+        }
         res.json(data[0]);
     } catch (err) {
-        console.error('[ITENS] Erro ao atualizar:', err);
+        console.error('[ITENS] Erro inesperado ao atualizar:', err);
         res.status(500).json({ error: err.message });
     }
 });
