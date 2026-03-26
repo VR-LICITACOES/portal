@@ -215,6 +215,29 @@ h1 {
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
 
+/* BOTÃO EXCLUIR SELECIONADOS */
+.btn-delete-selected {
+    background: var(--btn-delete);
+    color: white;
+    border: none;
+    padding: 0.65rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-delete-selected:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
 /* SEARCH BAR */
 .search-bar-wrapper {
     margin-bottom: 0.5rem;
@@ -229,6 +252,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .search-icon {
@@ -651,6 +675,16 @@ tbody tr:hover {
     background: var(--table-hover);
 }
 
+/* CHECKBOX NA TABELA */
+th input[type="checkbox"],
+td input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    margin: 0;
+    vertical-align: middle;
+}
+
 /* STATUS BADGES */
 .status-badge {
     display: inline-block;
@@ -1047,7 +1081,8 @@ input:focus, select:focus, textarea:focus {
         justify-content: space-between;
     }
     
-    .btn-new-order-header {
+    .btn-new-order-header,
+    .btn-delete-selected {
         width: 100%;
         justify-content: center;
     }
