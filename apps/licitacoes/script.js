@@ -16,6 +16,7 @@ let currentMonth = new Date();
 let currentFetchController = null;
 let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
+let currentDateFilter = null; // para filtro por data do calendário
 
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
@@ -117,6 +118,8 @@ function updateMonthDisplay() {
 function changeMonth(direction) {
     currentMonth.setMonth(currentMonth.getMonth() + direction);
     updateMonthDisplay();
+    // Limpa filtro de data ao mudar de mês
+    currentDateFilter = null;
     loadLicitacoes();
 }
 
@@ -185,11 +188,17 @@ function updateStats() {
 function filterLicitacoes() {
     const search = (document.getElementById('search')?.value || '').toLowerCase();
     const statusFilter = document.getElementById('filterStatus')?.value || '';
-    const filtered = licitacoes.filter(l => {
+    let filtered = licitacoes.filter(l => {
         const matchSearch = l.numero_proposta.toLowerCase().includes(search) || (l.uf && l.uf.toLowerCase().includes(search));
         const matchStatus = !statusFilter || l.status === statusFilter;
         return matchSearch && matchStatus;
     });
+    
+    // Aplica filtro de data se existir
+    if (currentDateFilter) {
+        filtered = filtered.filter(l => l.data === currentDateFilter);
+    }
+    
     renderLicitacoes(filtered);
 }
 
@@ -388,7 +397,7 @@ function renderVencidosModal(vencidas) {
     if (!tbody) return;
     
     if (pageData.length === 0) {
-        tbody.innerHTML = '.<td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
@@ -467,7 +476,7 @@ function mostrarTelaItens() {
                     <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;">${tituloProposta}</p>
                 </div>
             </div>
-            <div></div> <!-- espaço vazio para manter a estrutura -->
+            <div></div>
         </div>
 
         <!-- SEARCH BAR COM ÍCONES À DIREITA -->
@@ -479,7 +488,6 @@ function mostrarTelaItens() {
                 </svg>
                 <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
                 
-                <!-- Ícones à direita -->
                 <div class="search-bar-filters" style="margin-left: auto;">
                     <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -533,7 +541,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- TOTAIS (sem borda e sem MARGEM) -->
+        <!-- TOTAIS -->
         <div class="totals-bar">
             <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
             <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
@@ -777,7 +785,6 @@ function showToast(msg, tipo = 'success') {
 }
 
 function syncData() {
-    console.log('🔄 Sincronizando dados');
     loadLicitacoes();
 }
 
