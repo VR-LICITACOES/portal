@@ -674,7 +674,7 @@ input:focus, select:focus, textarea:focus {
 .totals-bar {
     background: var(--bg-card);
     border-top: 1px solid var(--border-color);
-    margin-top: 0.5rem;
+    margin-top: 0;
     padding: 1rem;
     display: flex;
     gap: 2rem;
@@ -682,7 +682,7 @@ input:focus, select:focus, textarea:focus {
     border-radius: 0 0 12px 12px;
 }
 
-/* CHECKBOX ESTILIZADO (igual ao da tabela principal) */
+/* CHECKBOX ESTILIZADO (apenas na tabela principal) */
 .checkbox-wrapper {
     display: inline-flex;
     align-items: center;
