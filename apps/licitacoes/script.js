@@ -7,7 +7,7 @@ let licitacoes = [];
 let itens = [];
 let currentLicitacaoId = null;
 let editingId = null;
-let editingItemIndex = null;
+let editingItemId = null;           // para edição de item
 let isOnline = false;
 let sessionToken = null;
 let consecutive401Count = 0;
@@ -17,6 +17,9 @@ let isAllMonths = false;
 let currentFetchController = null;
 let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
+
+// Array para armazenar os IDs das licitações selecionadas para exclusão em massa
+let selectedLicitacoes = new Set();
 
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
@@ -201,13 +204,16 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => `
         <tr onclick="viewLicitacao('${l.id}')">
+            <td style="text-align:center;" onclick="event.stopPropagation()">
+                <input type="checkbox" class="licitacao-checkbox" data-id="${l.id}" ${selectedLicitacoes.has(l.id) ? 'checked' : ''} onclick="toggleSelecionarLicitacao('${l.id}', this.checked); event.stopPropagation();">
+            </td>
             <td><strong>${l.numero_proposta}</strong></td>
-            <td>${new Date(l.data).toLocaleDateString('pt-BR')}</td>
+            <td>${l.data}</td>
             <td>${l.hora || '-'}</td>
             <td>${l.uf || '-'}</td>
             <td><span class="status-badge ${l.status === 'ENVIADA' ? 'success' : 'warning'}">${l.status}</span></td>
@@ -217,6 +223,79 @@ function renderLicitacoes(lista) {
             </td>
         </tr>
     `).join('');
+    // Atualizar visibilidade do botão "Excluir selecionados"
+    const btnExcluir = document.getElementById('btnExcluirSelecionados');
+    if (btnExcluir) {
+        btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
+    }
+}
+
+// ========== SELEÇÃO EM MASSA ==========
+function toggleSelecionarLicitacao(id, isChecked) {
+    if (isChecked) {
+        selectedLicitacoes.add(id);
+    } else {
+        selectedLicitacoes.delete(id);
+    }
+    const btnExcluir = document.getElementById('btnExcluirSelecionados');
+    if (btnExcluir) btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
+    // Atualizar checkbox "selecionar todos"
+    const selectAll = document.getElementById('selectAllCheckbox');
+    if (selectAll) {
+        const allCheckboxes = document.querySelectorAll('.licitacao-checkbox');
+        selectAll.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+    }
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAllCheckbox');
+    const isChecked = selectAll.checked;
+    const checkboxes = document.querySelectorAll('.licitacao-checkbox');
+    checkboxes.forEach(cb => {
+        const id = cb.getAttribute('data-id');
+        cb.checked = isChecked;
+        if (isChecked) {
+            selectedLicitacoes.add(id);
+        } else {
+            selectedLicitacoes.delete(id);
+        }
+    });
+    const btnExcluir = document.getElementById('btnExcluirSelecionados');
+    if (btnExcluir) btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
+}
+
+async function excluirSelecionados() {
+    if (selectedLicitacoes.size === 0) return;
+    if (!confirm(`Tem certeza que deseja excluir ${selectedLicitacoes.size} proposta(s)?`)) return;
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
+    const ids = Array.from(selectedLicitacoes);
+    try {
+        // Excluir uma por uma (ou em lote se a API suportar)
+        for (const id of ids) {
+            const res = await fetch(`${API_URL}/licitacoes/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            if (res.status === 401) {
+                sessionStorage.removeItem('licitacoesSession');
+                mostrarTelaAcessoNegado('Sessão expirada');
+                return;
+            }
+            if (!res.ok) throw new Error(`Erro ao excluir proposta ${id}`);
+        }
+        // Atualizar lista local
+        licitacoes = licitacoes.filter(l => !selectedLicitacoes.has(l.id));
+        selectedLicitacoes.clear();
+        showToast(`${ids.length} proposta(s) excluída(s)`, 'success');
+        updateDisplay();
+        // Limpar seleção na interface
+        const selectAll = document.getElementById('selectAllCheckbox');
+        if (selectAll) selectAll.checked = false;
+        const btnExcluir = document.getElementById('btnExcluirSelecionados');
+        if (btnExcluir) btnExcluir.style.display = 'none';
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 }
 
 // ========== CRUD LICITAÇÕES ==========
@@ -341,7 +420,7 @@ function renderVencidosModal(vencidas) {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
                 <td>${l.numero_proposta}</td>
-                <td>${new Date(l.data).toLocaleDateString('pt-BR')}</td>
+                <td>${l.data}</td>
                 <td>${l.hora || '-'}</td>
             </tr>
         `).join('');
@@ -378,8 +457,6 @@ function fecharModalVencidos() {
 
 // ========== VERIFICAR PRAZOS VENCIDOS ==========
 function verificarPrazosVencidos() {
-    const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
     updateStats(); // atualiza o badge
 }
 
@@ -475,9 +552,216 @@ function mostrarTelaItens() {
     }
 }
 
-// ========== ITENS CRUD (mantido do código anterior) ==========
-// ... (manter todas as funções de itens do script.js anterior)
-// As funções de itens (carregarItens, renderItens, adicionarItem, editarItem, etc.) são as mesmas já fornecidas
+// ========== CRUD DE ITENS ==========
+async function carregarItens(licitacaoId) {
+    if (!isOnline) return;
+    try {
+        const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, {
+            headers: getHeaders()
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado('Sessão expirada');
+            return;
+        }
+        if (!res.ok) throw new Error('Erro ao carregar itens');
+        itens = await res.json();
+        renderItens();
+        atualizarTotais();
+    } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar itens', 'error');
+    }
+}
+
+function renderItens() {
+    const tbody = document.getElementById('itensContainer');
+    if (!tbody) return;
+    const search = document.getElementById('searchItens')?.value.toLowerCase() || '';
+    const marcaFiltro = document.getElementById('filterMarcaItens')?.value;
+    const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))];
+    const marcaSelect = document.getElementById('filterMarcaItens');
+    if (marcaSelect && marcas.length) {
+        const current = marcaSelect.value;
+        marcaSelect.innerHTML = '<option value="">Marca</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+        marcaSelect.value = current;
+    }
+    const filtered = itens.filter(item => {
+        const matchSearch = item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
+        const matchMarca = !marcaFiltro || item.marca === marcaFiltro;
+        return matchSearch && matchMarca;
+    });
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map((item, idx) => `
+        <tr onclick="abrirEdicaoItem(${item.id || idx})" style="cursor:pointer;">
+            <td style="text-align:center;" onclick="event.stopPropagation()">
+                <input type="checkbox" class="item-checkbox" data-id="${item.id || idx}" onclick="event.stopPropagation()">
+            </td>
+            <td>${item.numero_item || idx+1}</td>
+            <td class="descricao-cell">${item.descricao || ''}</td>
+            <td>${item.quantidade || 0}</td>
+            <td>${item.unidade || ''}</td>
+            <td>${item.marca || ''}</td>
+            <td>${item.modelo || ''}</td>
+            <td>${formatMoney(item.custo_unitario)}</td>
+            <td>${formatMoney(item.custo_total)}</td>
+            <td>${formatMoney(item.venda_unitario)}</td>
+            <td>${formatMoney(item.venda_total)}</td>
+        </tr>
+    `).join('');
+}
+
+function atualizarTotais() {
+    const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
+    const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
+    const bar = document.getElementById('itensTotaisBar');
+    if (bar) {
+        bar.innerHTML = `
+            <strong>💰 CUSTO TOTAL:</strong> ${formatMoney(totalCusto)} &nbsp;&nbsp;
+            <strong>💵 VENDA TOTAL:</strong> ${formatMoney(totalVenda)} &nbsp;&nbsp;
+            <strong>📈 MARGEM:</strong> ${totalCusto ? ((totalVenda - totalCusto) / totalCusto * 100).toFixed(2) : 0}%
+        `;
+    }
+}
+
+function formatMoney(value) {
+    if (value === undefined || value === null) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+// Abrir modal para adicionar/editar item
+function adicionarItem() {
+    editingItemId = null;
+    document.getElementById('itemModalTitle').textContent = 'Adicionar Item';
+    document.getElementById('itemNumero').value = itens.length + 1;
+    document.getElementById('itemDescricao').value = '';
+    document.getElementById('itemQuantidade').value = '';
+    document.getElementById('itemUnidade').value = '';
+    document.getElementById('itemMarca').value = '';
+    document.getElementById('itemModelo').value = '';
+    document.getElementById('itemCustoUnitario').value = '';
+    document.getElementById('itemVendaUnitario').value = '';
+    document.getElementById('itemModal').classList.add('show');
+}
+
+function abrirEdicaoItem(index) {
+    const item = itens[index];
+    if (!item) return;
+    editingItemId = item.id || index;
+    document.getElementById('itemModalTitle').textContent = 'Editar Item';
+    document.getElementById('itemNumero').value = item.numero_item;
+    document.getElementById('itemDescricao').value = item.descricao;
+    document.getElementById('itemQuantidade').value = item.quantidade;
+    document.getElementById('itemUnidade').value = item.unidade || '';
+    document.getElementById('itemMarca').value = item.marca || '';
+    document.getElementById('itemModelo').value = item.modelo || '';
+    document.getElementById('itemCustoUnitario').value = item.custo_unitario || '';
+    document.getElementById('itemVendaUnitario').value = item.venda_unitario || '';
+    document.getElementById('itemModal').classList.add('show');
+}
+
+function fecharItemModal() {
+    document.getElementById('itemModal').classList.remove('show');
+    editingItemId = null;
+}
+
+async function salvarItem() {
+    const itemData = {
+        numero_item: parseInt(document.getElementById('itemNumero').value),
+        descricao: document.getElementById('itemDescricao').value.trim(),
+        quantidade: parseFloat(document.getElementById('itemQuantidade').value),
+        unidade: document.getElementById('itemUnidade').value.trim(),
+        marca: document.getElementById('itemMarca').value.trim(),
+        modelo: document.getElementById('itemModelo').value.trim(),
+        custo_unitario: parseFloat(document.getElementById('itemCustoUnitario').value) || 0,
+        venda_unitario: parseFloat(document.getElementById('itemVendaUnitario').value) || 0
+    };
+    if (!itemData.descricao || isNaN(itemData.quantidade) || itemData.quantidade <= 0) {
+        showToast('Descrição e quantidade são obrigatórios', 'error');
+        return;
+    }
+    // Calcular totais
+    itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
+    itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
+    
+    if (!isOnline) {
+        showToast('Sistema offline', 'error');
+        return;
+    }
+    try {
+        let url, method;
+        if (editingItemId !== null && typeof editingItemId === 'number' && itens[editingItemId] && itens[editingItemId].id) {
+            // Editar item existente (com id real)
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${itens[editingItemId].id}`;
+            method = 'PUT';
+        } else {
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens`;
+            method = 'POST';
+        }
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', ...getHeaders() },
+            body: JSON.stringify(itemData)
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado('Sessão expirada');
+            return;
+        }
+        if (!res.ok) throw new Error('Erro ao salvar item');
+        const saved = await res.json();
+        if (method === 'POST') {
+            itens.push(saved);
+        } else {
+            const index = itens.findIndex(i => i.id === saved.id);
+            if (index !== -1) itens[index] = saved;
+        }
+        fecharItemModal();
+        renderItens();
+        atualizarTotais();
+        showToast('Item salvo com sucesso', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Funções auxiliares para itens (filtro, sincronizar, etc.)
+function filterItens() {
+    renderItens();
+}
+
+function syncItens() {
+    if (currentLicitacaoId) carregarItens(currentLicitacaoId);
+}
+
+function abrirModalIntervalo() {
+    showToast('Funcionalidade em desenvolvimento', 'error');
+}
+
+function abrirModalExcluirItens() {
+    showToast('Funcionalidade em desenvolvimento', 'error');
+}
+
+function abrirModalCotacao() {
+    showToast('Funcionalidade em desenvolvimento', 'error');
+}
+
+function fecharModalCotacao() {
+    document.getElementById('modalCotacao').classList.remove('show');
+}
+
+function copiarMensagemCotacao() {
+    const msg = document.getElementById('cotacaoMensagem').value;
+    navigator.clipboard.writeText(msg);
+    showToast('Mensagem copiada!', 'success');
+}
+
+function gerarMensagemCotacao() {
+    // Placeholder
+}
 
 // ========== UTILITÁRIOS ==========
 function showToast(msg, tipo = 'success') {
@@ -509,3 +793,17 @@ window.voltar = voltar;
 window.abrirModalVencidos = abrirModalVencidos;
 window.fecharModalVencidos = fecharModalVencidos;
 window.vencidosPageChange = vencidosPageChange;
+window.adicionarItem = adicionarItem;
+window.salvarItem = salvarItem;
+window.fecharItemModal = fecharItemModal;
+window.filterItens = filterItens;
+window.syncItens = syncItens;
+window.abrirModalIntervalo = abrirModalIntervalo;
+window.abrirModalExcluirItens = abrirModalExcluirItens;
+window.abrirModalCotacao = abrirModalCotacao;
+window.fecharModalCotacao = fecharModalCotacao;
+window.copiarMensagemCotacao = copiarMensagemCotacao;
+window.gerarMensagemCotacao = gerarMensagemCotacao;
+window.toggleSelectAll = toggleSelectAll;
+window.excluirSelecionados = excluirSelecionados;
+window.toggleSelecionarLicitacao = toggleSelecionarLicitacao;
