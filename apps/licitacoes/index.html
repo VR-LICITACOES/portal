@@ -10,7 +10,6 @@
 <body>
     <div class="app-content">
         <div class="container">
-            <!-- HEADER -->
             <div class="header">
                 <div class="header-left">
                     <h1>Licitações</h1>
@@ -27,7 +26,6 @@
                 </button>
             </div>
 
-            <!-- DASHBOARD CARDS -->
             <div class="dashboard-grid">
                 <div class="stat-card">
                     <div class="stat-icon stat-icon-default">
@@ -79,7 +77,6 @@
                 </div>
             </div>
 
-            <!-- SEARCH BAR COM FILTROS -->
             <div class="search-bar-wrapper">
                 <div class="search-bar">
                     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -87,7 +84,6 @@
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
                     <input type="text" id="search" placeholder="Pesquisar por número ou UF" oninput="filterLicitacoes()">
-                    
                     <div class="search-bar-filters">
                         <div class="filter-dropdown-inline">
                             <select id="filterStatus" onchange="filterLicitacoes()">
@@ -115,7 +111,6 @@
                             </button>
                         </div>
                     </div>
-
                     <button class="calendar-btn" onclick="toggleCalendar()" title="Calendário">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -133,7 +128,6 @@
                 </div>
             </div>
 
-            <!-- CALENDAR MODAL (dias do mês) -->
             <div class="calendar-modal" id="calendarModal">
                 <div class="calendar-content">
                     <div class="calendar-header">
@@ -156,7 +150,6 @@
                 </div>
             </div>
 
-            <!-- MODAL PRAZO VENCIDO -->
             <div class="modal-overlay" id="modalVencidos">
                 <div class="modal-content" style="max-width: 700px;">
                     <div class="modal-header">
@@ -165,9 +158,9 @@
                     </div>
                     <div style="overflow-x: auto;">
                         <table style="width:100%;">
-                            <thead>  <th>Nº Proposta</th><th>Data</th><th>Hora</th> </thead>
+                            <thead> <th>Nº Proposta</th><th>Data</th><th>Hora</th> </thead>
                             <tbody id="vencidosTableBody"></tbody>
-                          </table>
+                        </table>
                     </div>
                     <div id="vencidosPaginacao" class="paginacao-wrapper" style="margin-top:1rem;"></div>
                     <div class="modal-actions">
@@ -176,7 +169,6 @@
                 </div>
             </div>
 
-            <!-- MODAL NOVA PROPOSTA / EDIÇÃO -->
             <div class="modal-overlay" id="formModal">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -184,33 +176,10 @@
                         <button class="close-modal" onclick="closeFormModal(true)">✕</button>
                     </div>
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>Nº Proposta *</label>
-                            <input type="text" id="numeroProposta" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Data *</label>
-                            <input type="date" id="dataProposta" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Hora</label>
-                            <input type="time" id="horaProposta">
-                        </div>
-                        <div class="form-group">
-                            <label>Local de Entrega (UF)</label>
-                            <select id="ufProposta">
-                                <option value="">SELECIONE</option>
-                                <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
-                                <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
-                                <option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option>
-                                <option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
-                                <option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
-                                <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
-                                <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
-                                <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-                                <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option>
-                            </select>
-                        </div>
+                        <div class="form-group"><label>Nº Proposta *</label><input type="text" id="numeroProposta" required></div>
+                        <div class="form-group"><label>Data *</label><input type="date" id="dataProposta" required></div>
+                        <div class="form-group"><label>Hora</label><input type="time" id="horaProposta"></div>
+                        <div class="form-group"><label>Local de Entrega (UF)</label><select id="ufProposta"><option value="">SELECIONE</option><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div>
                     </div>
                     <div class="modal-actions">
                         <button type="button" onclick="salvarLicitacao()" class="success">Salvar</button>
@@ -219,7 +188,6 @@
                 </div>
             </div>
 
-            <!-- MODAL EXCLUIR -->
             <div class="modal-overlay" id="deleteModal">
                 <div class="modal-content modal-delete">
                     <button class="close-modal" onclick="closeDeleteModal()">✕</button>
@@ -231,7 +199,6 @@
                 </div>
             </div>
 
-            <!-- MODAL ITEM (com abas) -->
             <div class="modal-overlay" id="itemModal">
                 <div class="modal-content" style="max-width: 900px;">
                     <div class="modal-header">
@@ -277,7 +244,6 @@
                 </div>
             </div>
 
-            <!-- MODAL COTAÇÃO (placeholder) -->
             <div class="modal-overlay" id="modalCotacao">
                 <div class="modal-content" style="max-width: 500px;">
                     <div class="modal-header">
@@ -296,21 +262,13 @@
                 </div>
             </div>
 
-            <!-- TABELA PRINCIPAL -->
             <div class="card table-card">
                 <div style="overflow-x: auto;">
                     <table style="min-width: 800px;">
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;">
-                                    <span style="font-size: 1.1rem;">✓</span>
-                                </th>
-                                <th>Nº Proposta</th>
-                                <th>Data</th>
-                                <th>Hora</th>
-                                <th>UF</th>
-                                <th>Status</th>
-                                <th style="text-align: center;">Ações</th>
+                                <th style="width: 40px; text-align: center;"><span style="font-size: 1.1rem;">✓</span></th>
+                                <th>Nº Proposta</th><th>Data</th><th>Hora</th><th>UF</th><th>Status</th><th style="text-align: center;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="licitacoesContainer"></tbody>
@@ -320,7 +278,6 @@
         </div>
     </div>
 
-    <!-- TELA DE ITENS (será preenchida dinamicamente) -->
     <div id="telaItens" style="display:none;"></div>
 
     <script src="calendar.js"></script>
