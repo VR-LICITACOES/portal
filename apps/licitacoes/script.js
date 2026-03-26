@@ -165,7 +165,7 @@ function updateStats() {
     document.getElementById('totalEnviadas').textContent = enviadas;
     document.getElementById('totalAbertas').textContent = abertas;
     document.getElementById('totalVencidas').textContent = vencidas;
-    
+
     const card = document.getElementById('prazoVencidoCard');
     if (vencidas > 0) {
         card.classList.add('has-alert');
@@ -193,12 +193,12 @@ function filterLicitacoes() {
         const matchStatus = !statusFilter || l.status === statusFilter;
         return matchSearch && matchStatus;
     });
-    
+
     // Aplica filtro de data se existir
     if (currentDateFilter) {
         filtered = filtered.filter(l => l.data === currentDateFilter);
     }
-    
+
     renderLicitacoes(filtered);
 }
 
@@ -212,14 +212,16 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '.<td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
-    tbody.innerHTML = lista.map(l => `
-        <tr>
+    tbody.innerHTML = lista.map(l => {
+        const isEnviada = l.status === 'ENVIADA';
+        return `
+        <tr class="${isEnviada ? 'row-enviada' : ''}">
             <td style="text-align:center;" onclick="event.stopPropagation()">
                 <div class="checkbox-wrapper">
-                    <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${l.status === 'ENVIADA' ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
+                    <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${isEnviada ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
                     <label for="check-${l.id}" class="checkbox-label-styled"></label>
                 </div>
             </td>
@@ -228,14 +230,14 @@ function renderLicitacoes(lista) {
             <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')">
-                <span class="status-badge ${l.status === 'ENVIADA' ? 'success' : 'warning'}">${l.status}</span>
+                <span class="status-badge ${isEnviada ? 'success' : 'warning'}">${l.status}</span>
             </td>
             <td class="actions-cell" onclick="event.stopPropagation()">
                 <button class="action-btn edit" onclick="editLicitacao('${l.id}')">Editar</button>
                 <button class="action-btn delete" onclick="openDeleteModal('${l.id}')">Excluir</button>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
 async function toggleStatus(id) {
@@ -392,10 +394,10 @@ function renderVencidosModal(vencidas) {
     const end = start + VENCIDOS_PAGE_SIZE;
     const pageData = vencidas.slice(start, end);
     const totalPages = Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
-    
+
     const tbody = document.getElementById('vencidosTableBody');
     if (!tbody) return;
-    
+
     if (pageData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
@@ -407,7 +409,7 @@ function renderVencidosModal(vencidas) {
             </tr>
         `).join('');
     }
-    
+
     const pagContainer = document.getElementById('vencidosPaginacao');
     if (pagContainer && totalPages > 1) {
         let pagHtml = '<div class="paginacao-btns">';
@@ -487,7 +489,7 @@ function mostrarTelaItens() {
                     <path d="m21 21-4.35-4.35"></path>
                 </svg>
                 <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
-                
+
                 <div class="search-bar-filters" style="margin-left: auto;">
                     <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -605,7 +607,7 @@ function renderItens() {
 function atualizarTotais() {
     const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
-    
+
     const totalCustoSpan = document.getElementById('totalCusto');
     const totalVendaSpan = document.getElementById('totalVenda');
     if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
@@ -690,7 +692,7 @@ async function salvarItem() {
     itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
     itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
     itemData.lucro_bruto = itemData.venda_total - itemData.custo_total;
-    
+
     if (!isOnline) {
         showToast('Sistema offline', 'error');
         return;
@@ -784,8 +786,17 @@ function showToast(msg, tipo = 'success') {
     }, 3000);
 }
 
+// syncData: recarrega as licitações do servidor
 function syncData() {
-    loadLicitacoes();
+    if (!isOnline) {
+        showToast('Sistema offline', 'error');
+        return;
+    }
+    loadLicitacoes().then(() => {
+        showToast('Dados sincronizados!', 'success');
+    }).catch(() => {
+        showToast('Erro ao sincronizar', 'error');
+    });
 }
 
 // ========== EXPOSIÇÃO GLOBAL ==========
