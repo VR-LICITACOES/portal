@@ -445,7 +445,6 @@ function voltar() {
     itens = [];
 }
 
-// ========== TELA DE ITENS (CORRIGIDA) ==========
 function mostrarTelaItens() {
     document.querySelector('.container').style.display = 'none';
     let tela = document.getElementById('telaItens');
@@ -527,11 +526,12 @@ function mostrarTelaItens() {
                             <th>CUSTO TOTAL</th>
                             <th>VENDA UNT</th>
                             <th>VENDA TOTAL</th>
-                        </thead>
-                        <tbody id="itensContainer"></tbody>
-                    </table>
-                </div>
+                        </tr>
+                    </thead>
+                    <tbody id="itensContainer"></tbody>
+                </table>
             </div>
+        </div>
 
         <!-- TOTAIS (sem borda e sem MARGEM) -->
         <div class="totals-bar">
@@ -563,7 +563,7 @@ async function carregarItens(licitacaoId) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -575,7 +575,7 @@ function renderItens() {
         return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
@@ -594,7 +594,6 @@ function renderItens() {
     `).join('');
 }
 
-/ ========== ATUALIZAR TOTAIS (apenas custo e venda) ==========
 function atualizarTotais() {
     const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
@@ -603,17 +602,6 @@ function atualizarTotais() {
     const totalVendaSpan = document.getElementById('totalVenda');
     if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
     if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
-}
-
-// ========== FUNÇÃO SYNC ITENS (garantir que funciona) ==========
-function syncItens() {
-    if (currentLicitacaoId) {
-        console.log('🔄 Sincronizando itens da proposta', currentLicitacaoId);
-        carregarItens(currentLicitacaoId);
-        showToast('Itens sincronizados', 'success');
-    } else {
-        showToast('Nenhuma proposta selecionada', 'error');
-    }
 }
 
 function formatMoney(value) {
@@ -740,7 +728,13 @@ function filterItens() {
 }
 
 function syncItens() {
-    if (currentLicitacaoId) carregarItens(currentLicitacaoId);
+    if (currentLicitacaoId) {
+        console.log('🔄 Sincronizando itens da proposta', currentLicitacaoId);
+        carregarItens(currentLicitacaoId);
+        showToast('Itens sincronizados', 'success');
+    } else {
+        showToast('Nenhuma proposta selecionada', 'error');
+    }
 }
 
 function abrirModalCotacao() {
@@ -783,6 +777,7 @@ function showToast(msg, tipo = 'success') {
 }
 
 function syncData() {
+    console.log('🔄 Sincronizando dados');
     loadLicitacoes();
 }
 
