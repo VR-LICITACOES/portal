@@ -543,28 +543,6 @@ function mostrarTelaItens() {
     tela.style.display = 'block';
 }
 
-// ========== ATUALIZAR TOTAIS (apenas custo e venda) ==========
-function atualizarTotais() {
-    const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
-    const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
-    
-    const totalCustoSpan = document.getElementById('totalCusto');
-    const totalVendaSpan = document.getElementById('totalVenda');
-    if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
-    if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
-}
-
-// ========== FUNÇÃO SYNC ITENS (garantir que funciona) ==========
-function syncItens() {
-    if (currentLicitacaoId) {
-        console.log('Sincronizando itens da proposta', currentLicitacaoId);
-        carregarItens(currentLicitacaoId);
-        showToast('Itens sincronizados', 'success');
-    } else {
-        showToast('Nenhuma proposta selecionada', 'error');
-    }
-}
-
 // ========== CRUD DE ITENS ==========
 async function carregarItens(licitacaoId) {
     if (!isOnline) return;
