@@ -1,5 +1,5 @@
 /* ============================================
-   VARIÁVEIS BASE (cores e temas)
+   VARIÁVEIS BASE (iguais ao Ordem de Compra)
    ============================================ */
 :root {
     --primary: #ff521d;
@@ -108,9 +108,7 @@ h1 {
     margin: 0;
 }
 
-/* ============================================
-   STATUS DE CONEXÃO
-   ============================================ */
+/* STATUS DE CONEXÃO */
 .connection-status {
     display: flex;
     align-items: center;
@@ -120,38 +118,31 @@ h1 {
     font-size: 0.8rem;
     font-weight: 600;
 }
-
 .status-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
 }
-
 .connection-status.online .status-dot {
     background-color: #22C55E;
     animation: pulse-online 2s infinite;
 }
-
 .connection-status.offline .status-dot {
     background-color: #EF4444;
     animation: pulse-offline 2s infinite;
 }
-
 @keyframes pulse-online {
     0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
     70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
     100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
 }
-
 @keyframes pulse-offline {
     0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
     70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-/* ============================================
-   BOTÕES
-   ============================================ */
+/* BOTÕES */
 .btn-new-order-header {
     background: var(--btn-register);
     color: white;
@@ -169,40 +160,19 @@ h1 {
     box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
     white-space: nowrap;
 }
-
 .btn-new-order-header:hover {
     background: #2563EB;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
+button.success { background: var(--btn-save); color: white; }
+button.danger { background: var(--btn-delete); color: white; }
+button.secondary { background: #6B7280; color: white; }
+button.small { padding: 8px 12px; font-size: 0.85rem; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-button.success {
-    background: var(--btn-save);
-    color: white;
-}
-button.danger {
-    background: var(--btn-delete);
-    color: white;
-}
-button.secondary {
-    background: #6B7280;
-    color: white;
-}
-button.small {
-    padding: 8px 12px;
-    font-size: 0.85rem;
-}
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* ============================================
-   SEARCH BAR E FILTROS
-   ============================================ */
-.search-bar-wrapper {
-    margin-bottom: 0.5rem;
-}
+/* SEARCH BAR E FILTROS (mantido igual) */
+.search-bar-wrapper { margin-bottom: 0.5rem; }
 .search-bar {
     background: var(--bg-card);
     padding: 0.75rem 1rem;
@@ -214,10 +184,7 @@ button:disabled {
     gap: 0.75rem;
     flex-wrap: wrap;
 }
-.search-icon {
-    color: var(--text-secondary);
-    flex-shrink: 0;
-}
+.search-icon { color: var(--text-secondary); flex-shrink: 0; }
 .search-bar input {
     flex: 1;
     border: none;
@@ -228,9 +195,7 @@ button:disabled {
     font-family: inherit;
     min-width: 150px;
 }
-.search-bar input:focus {
-    outline: none;
-}
+.search-bar input:focus { outline: none; }
 .search-bar-filters {
     display: flex;
     align-items: center;
@@ -312,9 +277,7 @@ button:disabled {
     color: var(--primary);
 }
 
-/* ============================================
-   CALENDAR MODAL (dias do mês)
-   ============================================ */
+/* CALENDAR MODAL (dias do mês) */
 .calendar-modal {
     display: none;
     position: fixed;
@@ -328,9 +291,7 @@ button:disabled {
     align-items: center;
     justify-content: center;
 }
-.calendar-modal.show {
-    display: flex;
-}
+.calendar-modal.show { display: flex; }
 .calendar-content {
     background: var(--bg-card);
     border-radius: 16px;
@@ -390,26 +351,12 @@ button:disabled {
     background: var(--input-bg);
     color: var(--text-primary);
 }
-.calendar-day.empty {
-    background: transparent;
-    cursor: default;
-}
-.calendar-day.has-record {
-    background: var(--primary);
-    color: white;
-}
-.calendar-day.has-record:hover {
-    background: #004080;
-    transform: scale(1.05);
-}
-.calendar-day.today {
-    border: 2px solid var(--primary);
-    font-weight: bold;
-}
+.calendar-day.empty { background: transparent; cursor: default; }
+.calendar-day.has-record { background: var(--primary); color: white; }
+.calendar-day.has-record:hover { background: #004080; transform: scale(1.05); }
+.calendar-day.today { border: 2px solid var(--primary); font-weight: bold; }
 
-/* ============================================
-   DASHBOARD CARDS
-   ============================================ */
+/* DASHBOARD CARDS */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -446,9 +393,7 @@ button:disabled {
 .stat-icon-success { background: rgba(34, 197, 94, 0.1); color: #22C55E; }
 .stat-icon-danger { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
 .stat-icon-warning-light { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
-.stat-content {
-    flex: 1;
-}
+.stat-content { flex: 1; }
 .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
@@ -465,7 +410,6 @@ button:disabled {
     color: var(--text-secondary);
     font-weight: 500;
 }
-/* Alerta prazo vencido */
 .stat-card.has-alert {
     position: relative;
     animation: pulseAlert 2s ease-in-out infinite;
@@ -497,17 +441,13 @@ button:disabled {
     50% { transform: scale(1.1); }
 }
 
-/* ============================================
-   TABELA PRINCIPAL
-   ============================================ */
+/* TABELA PRINCIPAL */
 table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
 }
-thead {
-    background: var(--th-bg);
-}
+thead { background: var(--th-bg); }
 th {
     padding: 14px 16px;
     text-align: left;
@@ -529,12 +469,8 @@ tbody tr {
     transition: background 0.2s ease;
     cursor: pointer;
 }
-tbody tr:nth-child(even) {
-    background: var(--table-stripe);
-}
-tbody tr:hover {
-    background: var(--table-hover);
-}
+tbody tr:nth-child(even) { background: var(--table-stripe); }
+tbody tr:hover { background: var(--table-hover); }
 .actions-cell {
     white-space: nowrap;
     min-width: 200px;
@@ -549,14 +485,8 @@ tbody tr:hover {
     cursor: pointer;
     font-weight: 600;
 }
-.action-btn.edit {
-    background: var(--btn-edit);
-    color: white;
-}
-.action-btn.delete {
-    background: var(--btn-delete);
-    color: white;
-}
+.action-btn.edit { background: var(--btn-edit); color: white; }
+.action-btn.delete { background: var(--btn-delete); color: white; }
 .status-badge {
     display: inline-block;
     padding: 4px 12px;
@@ -578,9 +508,7 @@ tbody tr:hover {
     border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
-/* ============================================
-   MODAIS GERAIS
-   ============================================ */
+/* MODAIS GERAIS */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -596,9 +524,7 @@ tbody tr:hover {
     opacity: 0;
     animation: fadeIn 0.2s ease forwards;
 }
-.modal-overlay.show {
-    display: flex;
-}
+.modal-overlay.show { display: flex; }
 @keyframes fadeIn { to { opacity: 1; } }
 @keyframes fadeOut { to { opacity: 0; } }
 .modal-content {
@@ -690,18 +616,14 @@ tbody tr:hover {
     font-weight: 600;
 }
 
-/* ============================================
-   FORMULÁRIOS E TABELAS DE ITENS
-   ============================================ */
+/* FORMULÁRIOS E TABELAS DE ITENS */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.2rem;
     margin-bottom: 1.5rem;
 }
-.form-group {
-    margin-bottom: 1rem;
-}
+.form-group { margin-bottom: 1rem; }
 label {
     display: block;
     margin-bottom: 8px;
@@ -723,13 +645,8 @@ input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
 }
-/* Tela de itens */
-#telaItens .header {
-    margin-bottom: 1rem;
-}
-#telaItens .table-card {
-    margin-top: 0.5rem;
-}
+#telaItens .header { margin-bottom: 1rem; }
+#telaItens .table-card { margin-top: 0.5rem; }
 .descricao-cell {
     max-width: 300px;
     word-wrap: break-word;
@@ -747,7 +664,6 @@ input:focus, select:focus, textarea:focus {
     padding: 1rem;
     font-size: 10pt;
 }
-/* Checkbox customizado (para enviar proposta) */
 .checkbox-wrapper {
     display: inline-flex;
     align-items: center;
@@ -787,12 +703,8 @@ input:focus, select:focus, textarea:focus {
     font-weight: 700;
 }
 
-/* ============================================
-   SISTEMA DE ABAS (modal itens)
-   ============================================ */
-.tabs-container {
-    margin-bottom: 1.5rem;
-}
+/* SISTEMA DE ABAS */
+.tabs-container { margin-bottom: 1.5rem; }
 .tabs-nav {
     display: flex;
     gap: 0.5rem;
@@ -825,17 +737,13 @@ input:focus, select:focus, textarea:focus {
     display: none;
     animation: fadeInTab 0.3s ease;
 }
-.tab-content.active {
-    display: block;
-}
+.tab-content.active { display: block; }
 @keyframes fadeInTab {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ============================================
-   FLOATING MESSAGES
-   ============================================ */
+/* FLOATING MESSAGES */
 .floating-message {
     position: fixed;
     bottom: 24px;
@@ -868,9 +776,7 @@ input:focus, select:focus, textarea:focus {
     to { opacity: 0; transform: translateY(100px); }
 }
 
-/* ============================================
-   PAGINAÇÃO (modal vencidos)
-   ============================================ */
+/* PAGINAÇÃO DO MODAL VENCIDOS */
 #vencidosPaginacao .paginacao-btns {
     display: flex;
     align-items: center;
@@ -899,41 +805,17 @@ input:focus, select:focus, textarea:focus {
     cursor: not-allowed;
 }
 
-/* ============================================
-   RESPONSIVO
-   ============================================ */
+/* RESPONSIVO */
 @media (max-width: 768px) {
-    .container {
-        padding: 0 1rem 5rem 1rem;
-        margin: 1rem auto;
-    }
-    .header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .header-left {
-        width: 100%;
-        justify-content: space-between;
-    }
-    .btn-new-order-header {
-        width: 100%;
-        justify-content: center;
-    }
+    .container { padding: 0 1rem 5rem 1rem; margin: 1rem auto; }
+    .header { flex-direction: column; align-items: stretch; }
+    .header-left { width: 100%; justify-content: space-between; }
+    .btn-new-order-header { width: 100%; justify-content: center; }
     h1 { font-size: 1.5rem; }
-    .search-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .search-bar-filters {
-        width: 100%;
-        flex-direction: column;
-    }
-    .filter-dropdown-inline, .month-navigation-inline {
-        width: 100%;
-    }
-    .dashboard-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    .search-bar { flex-direction: column; align-items: stretch; }
+    .search-bar-filters { width: 100%; flex-direction: column; }
+    .filter-dropdown-inline, .month-navigation-inline { width: 100%; }
+    .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
     table { font-size: 0.85rem; }
     th, td { padding: 10px 8px; }
     .actions-cell { min-width: auto; }
