@@ -605,6 +605,17 @@ function atualizarTotais() {
     if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
 }
 
+// ========== FUNÇÃO SYNC ITENS (garantir que funciona) ==========
+function syncItens() {
+    if (currentLicitacaoId) {
+        console.log('🔄 Sincronizando itens da proposta', currentLicitacaoId);
+        carregarItens(currentLicitacaoId);
+        showToast('Itens sincronizados', 'success');
+    } else {
+        showToast('Nenhuma proposta selecionada', 'error');
+    }
+}
+
 function formatMoney(value) {
     if (value === undefined || value === null) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
