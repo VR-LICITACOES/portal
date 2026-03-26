@@ -249,11 +249,21 @@ async function toggleStatus(id) {
         return;
     }
     try {
-        const res = await fetch(`${API_URL}/licitacoes/${id}/status`, {
+        // Tenta o endpoint específico de status (PATCH)
+        let res = await fetch(`${API_URL}/licitacoes/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', ...getHeaders() },
             body: JSON.stringify({ status: novoStatus })
         });
+        // Se não existir (404), tenta atualizar a proposta inteira via PUT
+        if (res.status === 404) {
+            const propostaAtualizada = { ...proposta, status: novoStatus };
+            res = await fetch(`${API_URL}/licitacoes/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', ...getHeaders() },
+                body: JSON.stringify(propostaAtualizada)
+            });
+        }
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
             mostrarTelaAcessoNegado('Sessão expirada');
@@ -530,11 +540,19 @@ async function toggleEnviarProposta() {
         return;
     }
     try {
-        const res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}/status`, {
+        let res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', ...getHeaders() },
             body: JSON.stringify({ status: novoStatus })
         });
+        if (res.status === 404) {
+            const propostaAtualizada = { ...proposta, status: novoStatus };
+            res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', ...getHeaders() },
+                body: JSON.stringify(propostaAtualizada)
+            });
+        }
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
             mostrarTelaAcessoNegado('Sessão expirada');
@@ -812,6 +830,6 @@ window.fecharModalCotacao = fecharModalCotacao;
 window.copiarMensagemCotacao = copiarMensagemCotacao;
 window.gerarMensagemCotacao = gerarMensagemCotacao;
 window.switchItemTab = switchItemTab;
-window.toggleStatus = toggleStatus;  // <-- importante para o checkbox da tabela principal
+window.toggleStatus = toggleStatus;
 window.toggleEnviarProposta = toggleEnviarProposta;
 window.recalcularItemTotais = recalcularItemTotais;
