@@ -16,7 +16,7 @@ let currentMonth = new Date();
 let currentFetchController = null;
 let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
-let currentDateFilter = null; // para filtro por data do calendário
+let currentDateFilter = null;
 
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
@@ -45,12 +45,11 @@ function verificarAutenticacao() {
 
 function mostrarTelaAcessoNegado() {
     document.body.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--bg-primary); color: var(--text-primary); text-align: center; padding: 2rem;">
-            <h1 style="font-size: 2.2rem; margin-bottom: 1rem;">NÃO AUTORIZADO</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Somente usuários autenticados podem acessar esta área.</p>
-            <a href="/" style="display: inline-block; background: var(--btn-register); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">Ir para o Portal</a>
-        </div>
-    `;
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:var(--bg-primary);color:var(--text-primary);text-align:center;padding:2rem;">
+            <h1 style="font-size:2.2rem;margin-bottom:1rem;">NÃO AUTORIZADO</h1>
+            <p style="color:var(--text-secondary);margin-bottom:2rem;">Somente usuários autenticados podem acessar esta área.</p>
+            <a href="/" style="display:inline-block;background:var(--btn-register);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Ir para o Portal</a>
+        </div>`;
 }
 
 function inicializarApp() {
@@ -87,7 +86,7 @@ async function checkServerStatus() {
             consecutive401Count++;
             if (consecutive401Count >= MAX_401_BEFORE_LOGOUT) {
                 sessionStorage.removeItem('licitacoesSession');
-                mostrarTelaAcessoNegado('Sua sessão expirou');
+                mostrarTelaAcessoNegado();
             }
             return;
         }
@@ -110,15 +109,12 @@ function updateConnectionStatus() {
 // ========== NAVEGAÇÃO DE MÊS ==========
 function updateMonthDisplay() {
     const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const monthName = months[currentMonth.getMonth()];
-    const year = currentMonth.getFullYear();
-    document.getElementById('currentMonth').textContent = `${monthName} ${year}`;
+    document.getElementById('currentMonth').textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 }
 
 function changeMonth(direction) {
     currentMonth.setMonth(currentMonth.getMonth() + direction);
     updateMonthDisplay();
-    // Limpa filtro de data ao mudar de mês
     currentDateFilter = null;
     loadLicitacoes();
 }
@@ -129,14 +125,12 @@ async function loadLicitacoes() {
     if (currentFetchController) currentFetchController.abort();
     currentFetchController = new AbortController();
     const signal = currentFetchController.signal;
-
-    let url = `${API_URL}/licitacoes?mes=${currentMonth.getMonth()+1}&ano=${currentMonth.getFullYear()}`;
-
+    const url = `${API_URL}/licitacoes?mes=${currentMonth.getMonth()+1}&ano=${currentMonth.getFullYear()}`;
     try {
         const res = await fetch(url, { method: 'GET', headers: getHeaders(), signal });
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sua sessão expirou');
+            mostrarTelaAcessoNegado();
             return;
         }
         if (!res.ok) return;
@@ -173,11 +167,9 @@ function updateStats() {
         if (!badge) {
             badge = document.createElement('span');
             badge.className = 'pulse-badge';
-            badge.textContent = vencidas;
             card.appendChild(badge);
-        } else {
-            badge.textContent = vencidas;
         }
+        badge.textContent = vencidas;
     } else {
         card.classList.remove('has-alert');
         const badge = card.querySelector('.pulse-badge');
@@ -193,12 +185,9 @@ function filterLicitacoes() {
         const matchStatus = !statusFilter || l.status === statusFilter;
         return matchSearch && matchStatus;
     });
-
-    // Aplica filtro de data se existir
     if (currentDateFilter) {
         filtered = filtered.filter(l => l.data === currentDateFilter);
     }
-
     renderLicitacoes(filtered);
 }
 
@@ -236,8 +225,8 @@ function renderLicitacoes(lista) {
                 <button class="action-btn edit" onclick="editLicitacao('${l.id}')">Editar</button>
                 <button class="action-btn delete" onclick="openDeleteModal('${l.id}')">Excluir</button>
             </td>
-        </tr>
-    `}).join('');
+        </tr>`;
+    }).join('');
 }
 
 async function toggleStatus(id) {
@@ -257,18 +246,13 @@ async function toggleStatus(id) {
             body: JSON.stringify({ status: novoStatus })
         });
         if (res.status === 404) {
-            const propostaAtualizada = { ...proposta, status: novoStatus };
             res = await fetch(`${API_URL}/licitacoes/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', ...getHeaders() },
-                body: JSON.stringify(propostaAtualizada)
+                body: JSON.stringify({ ...proposta, status: novoStatus })
             });
         }
-        if (res.status === 401) {
-            sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
-            return;
-        }
+        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao atualizar status');
         const updated = await res.json();
         const index = licitacoes.findIndex(l => l.id === updated.id);
@@ -314,27 +298,17 @@ async function salvarLicitacao() {
         uf: document.getElementById('ufProposta').value || null,
         status: 'ABERTA'
     };
-    if (!data.numero_proposta || !data.data) {
-        showToast('Número e data são obrigatórios', 'error');
-        return;
-    }
-    if (!isOnline) {
-        showToast('Sistema offline', 'error');
-        closeFormModal(false);
-        return;
-    }
+    if (!data.numero_proposta || !data.data) { showToast('Número e data são obrigatórios', 'error'); return; }
+    if (!isOnline) { showToast('Sistema offline', 'error'); closeFormModal(false); return; }
     try {
         const url = editingId ? `${API_URL}/licitacoes/${editingId}` : `${API_URL}/licitacoes`;
         const method = editingId ? 'PUT' : 'POST';
         const res = await fetchWithTimeout(url, {
-            method, headers: { 'Content-Type': 'application/json', ...getHeaders() },
+            method,
+            headers: { 'Content-Type': 'application/json', ...getHeaders() },
             body: JSON.stringify(data)
         }, 15000);
-        if (res.status === 401) {
-            sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
-            return;
-        }
+        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error((await res.json()).error || 'Erro');
         const saved = await res.json();
         if (!editingId) licitacoes.push(saved);
@@ -343,9 +317,7 @@ async function salvarLicitacao() {
         showToast(editingId ? 'Proposta atualizada' : 'Proposta criada', 'success');
         updateDisplay();
         loadLicitacoes();
-    } catch (err) {
-        showToast(err.message, 'error');
-    }
+    } catch (err) { showToast(err.message, 'error'); }
 }
 
 function editLicitacao(id) { openFormModal(id); }
@@ -362,22 +334,14 @@ async function confirmarExclusao() {
     if (!currentLicitacaoId) return closeDeleteModal();
     if (!isOnline) { showToast('Sistema offline', 'error'); return closeDeleteModal(); }
     try {
-        const res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}`, {
-            method: 'DELETE', headers: getHeaders()
-        });
-        if (res.status === 401) {
-            sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
-            return;
-        }
+        const res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}`, { method: 'DELETE', headers: getHeaders() });
+        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao excluir');
         licitacoes = licitacoes.filter(l => l.id !== currentLicitacaoId);
         showToast('Proposta excluída', 'error');
         closeDeleteModal();
         updateDisplay();
-    } catch (err) {
-        showToast(err.message, 'error');
-    }
+    } catch (err) { showToast(err.message, 'error'); }
 }
 
 // ========== MODAL PRAZO VENCIDO ==========
@@ -391,38 +355,21 @@ function abrirModalVencidos() {
 
 function renderVencidosModal(vencidas) {
     const start = (vencidosPage - 1) * VENCIDOS_PAGE_SIZE;
-    const end = start + VENCIDOS_PAGE_SIZE;
-    const pageData = vencidas.slice(start, end);
+    const pageData = vencidas.slice(start, start + VENCIDOS_PAGE_SIZE);
     const totalPages = Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
-
     const tbody = document.getElementById('vencidosTableBody');
     if (!tbody) return;
-
-    if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
-    } else {
-        tbody.innerHTML = pageData.map(l => `
-            <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
-                <td>${l.numero_proposta}</td>
-                <td>${formatDateToBR(l.data)}</td>
-                <td>${l.hora || '-'}</td>
-            </tr>
-        `).join('');
-    }
-
+    tbody.innerHTML = pageData.length === 0
+        ? '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>'
+        : pageData.map(l => `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();"><td>${l.numero_proposta}</td><td>${formatDateToBR(l.data)}</td><td>${l.hora || '-'}</td></tr>`).join('');
     const pagContainer = document.getElementById('vencidosPaginacao');
     if (pagContainer && totalPages > 1) {
-        let pagHtml = '<div class="paginacao-btns">';
-        pagHtml += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage - 1})" ${vencidosPage === 1 ? 'disabled' : ''}>‹</button>`;
-        for (let i = 1; i <= totalPages; i++) {
-            pagHtml += `<button class="pag-btn ${i === vencidosPage ? 'pag-btn-active' : ''}" onclick="vencidosPageChange(${i})">${i}</button>`;
-        }
-        pagHtml += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage + 1})" ${vencidosPage === totalPages ? 'disabled' : ''}>›</button>`;
-        pagHtml += '</div>';
-        pagContainer.innerHTML = pagHtml;
-    } else if (pagContainer) {
-        pagContainer.innerHTML = '';
-    }
+        let h = '<div class="paginacao-btns">';
+        h += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage-1})" ${vencidosPage===1?'disabled':''}>‹</button>`;
+        for (let i = 1; i <= totalPages; i++) h += `<button class="pag-btn ${i===vencidosPage?'pag-btn-active':''}" onclick="vencidosPageChange(${i})">${i}</button>`;
+        h += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage+1})" ${vencidosPage===totalPages?'disabled':''}>›</button></div>`;
+        pagContainer.innerHTML = h;
+    } else if (pagContainer) { pagContainer.innerHTML = ''; }
 }
 
 function vencidosPageChange(page) {
@@ -438,11 +385,19 @@ function fecharModalVencidos() {
     document.getElementById('modalVencidos').classList.remove('show');
 }
 
-function verificarPrazosVencidos() {
-    updateStats();
+function verificarPrazosVencidos() { updateStats(); }
+
+// ========== SYNC PRINCIPAL ==========
+function syncData() {
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
+    loadLicitacoes()
+        .then(() => showToast('Dados sincronizados!', 'success'))
+        .catch(() => showToast('Erro ao sincronizar', 'error'));
 }
 
 // ========== TELA DE ITENS ==========
+// A tela de itens é renderizada dentro de #telaItens com seus próprios modais,
+// garantindo que não haja conflito com os modais da tela principal.
 function viewLicitacao(id) {
     currentLicitacaoId = id;
     mostrarTelaItens();
@@ -451,102 +406,195 @@ function viewLicitacao(id) {
 
 function voltar() {
     document.getElementById('telaItens').style.display = 'none';
-    document.querySelector('.container').style.display = 'block';
+    document.getElementById('mainContainer').style.display = 'block';
     currentLicitacaoId = null;
     itens = [];
 }
 
 function mostrarTelaItens() {
-    document.querySelector('.container').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'none';
     let tela = document.getElementById('telaItens');
     if (!tela) {
         tela = document.createElement('div');
         tela.id = 'telaItens';
-        tela.className = 'container';
         document.body.querySelector('.app-content').appendChild(tela);
     }
 
     const proposta = licitacoes.find(l => l.id === currentLicitacaoId);
-    const tituloProposta = proposta ? `Proposta Nº ${proposta.numero_proposta}` : '';
+    const numeroProposta = proposta ? proposta.numero_proposta : '';
 
     tela.innerHTML = `
-        <!-- HEADER IGUAL AO PRINCIPAL -->
-        <div class="header">
-            <div class="header-left">
-                <div>
-                    <h1>Itens da Proposta</h1>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;">${tituloProposta}</p>
+        <div class="container" id="containerItens">
+            <!-- HEADER -->
+            <div class="header">
+                <div class="header-left">
+                    <div>
+                        <h1>Itens da Proposta</h1>
+                        <p class="proposta-subtitulo">Proposta Nº ${numeroProposta}</p>
+                    </div>
+                </div>
+                <div></div>
+            </div>
+
+            <!-- SEARCH BAR -->
+            <div class="search-bar-wrapper">
+                <div class="search-bar">
+                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
+                    <div class="search-bar-filters" style="margin-left:auto;">
+                        <button onclick="adicionarItem()" class="calendar-btn" title="Adicionar item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="abrirModalCotacao()" class="calendar-btn" title="Enviar cotação">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                            </svg>
+                        </button>
+                        <button onclick="syncItens()" class="calendar-btn" title="Sincronizar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                        </button>
+                        <button onclick="voltar()" class="calendar-btn" title="Voltar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div></div>
+
+            <!-- TABELA DE ITENS -->
+            <div class="card table-card">
+                <div style="overflow-x:auto;">
+                    <table style="min-width:1000px;">
+                        <thead>
+                            <tr>
+                                <th>ITEM</th>
+                                <th style="min-width:250px;">DESCRIÇÃO</th>
+                                <th>QTD</th>
+                                <th>UND</th>
+                                <th>MARCA</th>
+                                <th>MODELO</th>
+                                <th>CUSTO UNT</th>
+                                <th>CUSTO TOTAL</th>
+                                <th>VENDA UNT</th>
+                                <th>VENDA TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itensContainer"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TOTAIS -->
+            <div class="totals-bar">
+                <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
+                <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
+            </div>
         </div>
 
-        <!-- SEARCH BAR COM ÍCONES À DIREITA -->
-        <div class="search-bar-wrapper">
-            <div class="search-bar">
-                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
-
-                <div class="search-bar-filters" style="margin-left: auto;">
-                    <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                    <button onclick="abrirModalCotacao()" class="btn-icon" title="Email">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                        </svg>
-                    </button>
-                    <button onclick="syncItens()" class="btn-icon" title="Sincronizar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                        </svg>
-                    </button>
-                    <button onclick="voltar()" class="btn-icon" title="Voltar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                            <polyline points="16 17 21 12 16 7"></polyline>
-                            <line x1="21" y1="12" x2="9" y2="12"></line>
-                        </svg>
-                    </button>
+        <!-- ===== MODAL: ADICIONAR / EDITAR ITEM ===== -->
+        <div class="modal-overlay" id="itemModal">
+            <div class="modal-content" style="max-width:900px">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="itemModalTitle">Adicionar Item</h3>
+                    <button class="close-modal" onclick="fecharItemModal()">✕</button>
+                </div>
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" onclick="switchItemTab('item-tab-geral')">Geral</button>
+                        <button class="tab-btn" onclick="switchItemTab('item-tab-transporte')">Transporte</button>
+                        <button class="tab-btn" onclick="switchItemTab('item-tab-valores')">Valores</button>
+                    </div>
+                    <div class="tab-content active" id="item-tab-geral">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Nº Item</label><input type="number" id="itemNumero" readonly></div>
+                            <div class="form-group"><label>Descrição *</label><input type="text" id="itemDescricao" required></div>
+                            <div class="form-group"><label>Quantidade *</label><input type="number" step="any" id="itemQuantidade" required onchange="recalcularItemTotais()"></div>
+                            <div class="form-group">
+                                <label>Unidade</label>
+                                <select id="itemUnidade">
+                                    <option value="UN">UN</option><option value="CX">CX</option>
+                                    <option value="MT">MT</option><option value="PCT">PCT</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Marca</label><input type="text" id="itemMarca"></div>
+                            <div class="form-group"><label>Modelo</label><input type="text" id="itemModelo"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="item-tab-transporte">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Prazo de Entrega</label><input type="text" id="itemPrazoEntrega"></div>
+                            <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="item-tab-valores">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Custo Unitário</label><input type="number" step="any" id="itemCustoUnitario" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Custo Total</label><input type="text" id="itemCustoTotal" readonly></div>
+                            <div class="form-group"><label>Venda Unitário</label><input type="number" step="any" id="itemVendaUnitario" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Venda Total</label><input type="text" id="itemVendaTotal" readonly></div>
+                            <div class="form-group"><label>Lucro Bruto</label><input type="text" id="itemLucroBruto" readonly></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="success" onclick="salvarItem()">Salvar</button>
+                    <button class="danger" onclick="fecharItemModal()">Cancelar</button>
                 </div>
             </div>
         </div>
 
-        <!-- TABELA DE ITENS -->
-        <div class="card table-card">
-            <div style="overflow-x: auto;">
-                <table style="min-width: 1000px;">
-                    <thead>
-                        <tr>
-                            <th>ITEM</th>
-                            <th style="min-width: 250px;">DESCRIÇÃO</th>
-                            <th>QTD</th>
-                            <th>UND</th>
-                            <th>MARCA</th>
-                            <th>MODELO</th>
-                            <th>CUSTO UNT</th>
-                            <th>CUSTO TOTAL</th>
-                            <th>VENDA UNT</th>
-                            <th>VENDA TOTAL</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itensContainer"></tbody>
-                </table>
+        <!-- ===== MODAL: COTAÇÃO ===== -->
+        <div class="modal-overlay" id="modalCotacaoItens">
+            <div class="modal-content" style="max-width:560px">
+                <div class="modal-header">
+                    <h3 class="modal-title">Enviar Cotação</h3>
+                    <button class="close-modal" onclick="fecharModalCotacao()">✕</button>
+                </div>
+                <div class="form-grid" style="grid-template-columns:1fr;">
+                    <div class="form-group">
+                        <label>Fornecedor (Marca)</label>
+                        <div class="filter-dropdown-inline" style="min-width:unset;">
+                            <select id="cotacaoFornecedorSelect" onchange="atualizarPreviewCotacao()">
+                                <option value="">Selecione a marca...</option>
+                            </select>
+                            <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de envio</label>
+                        <div style="display:flex;gap:1.5rem;padding:0.5rem 0;">
+                            <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;cursor:pointer;margin:0;">
+                                <input type="radio" name="cotacaoTipo" value="descricao" checked onchange="atualizarPreviewCotacao()"> Descrição
+                            </label>
+                            <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;cursor:pointer;margin:0;">
+                                <input type="radio" name="cotacaoTipo" value="modelo" onchange="atualizarPreviewCotacao()"> Modelo
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Pré-visualização da mensagem</label>
+                        <textarea id="cotacaoPreview" rows="10" readonly style="background:var(--input-bg);font-family:monospace;font-size:0.85rem;resize:vertical;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="success" onclick="enviarCotacao()" id="btnEnviarCotacao">
+                        <span id="btnEnviarCotacaoLabel">Enviar</span>
+                    </button>
+                    <button class="danger" onclick="fecharModalCotacao()">Cancelar</button>
+                </div>
             </div>
-        </div>
-
-        <!-- TOTAIS -->
-        <div class="totals-bar">
-            <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
-            <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
         </div>
     `;
 
@@ -557,14 +605,8 @@ function mostrarTelaItens() {
 async function carregarItens(licitacaoId) {
     if (!isOnline) return;
     try {
-        const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, {
-            headers: getHeaders()
-        });
-        if (res.status === 401) {
-            sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
-            return;
-        }
+        const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, { headers: getHeaders() });
+        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao carregar itens');
         itens = await res.json();
         renderItens();
@@ -580,17 +622,18 @@ async function carregarItens(licitacaoId) {
 function renderItens() {
     const tbody = document.getElementById('itensContainer');
     if (!tbody) return;
-    const search = document.getElementById('searchItens')?.value.toLowerCase() || '';
-    const filtered = itens.filter(item => {
-        return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
-    });
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+    const search = (document.getElementById('searchItens')?.value || '').toLowerCase();
+    const filtered = itens.filter(item =>
+        (item.descricao || '').toLowerCase().includes(search) ||
+        (item.modelo || '').toLowerCase().includes(search)
+    );
+    if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
-        <tr onclick="abrirEdicaoItem(${item.id || idx})" style="cursor:pointer;">
-            <td>${item.numero_item || idx+1}</td>
+        <tr onclick="abrirEdicaoItem('${item.id}')" style="cursor:pointer;">
+            <td>${item.numero_item || item.numero || idx+1}</td>
             <td class="descricao-cell">${item.descricao || ''}</td>
             <td>${item.quantidade || 0}</td>
             <td>${item.unidade || ''}</td>
@@ -600,18 +643,16 @@ function renderItens() {
             <td>${formatMoney(item.custo_total)}</td>
             <td>${formatMoney(item.venda_unitario)}</td>
             <td>${formatMoney(item.venda_total)}</td>
-        </tr>
-    `).join('');
+        </tr>`).join('');
 }
 
 function atualizarTotais() {
-    const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
-    const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
-
-    const totalCustoSpan = document.getElementById('totalCusto');
-    const totalVendaSpan = document.getElementById('totalVenda');
-    if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
-    if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
+    const totalCusto = itens.reduce((acc, i) => acc + (parseFloat(i.custo_total) || 0), 0);
+    const totalVenda = itens.reduce((acc, i) => acc + (parseFloat(i.venda_total) || 0), 0);
+    const elCusto = document.getElementById('totalCusto');
+    const elVenda = document.getElementById('totalVenda');
+    if (elCusto) elCusto.textContent = formatMoney(totalCusto);
+    if (elVenda) elVenda.textContent = formatMoney(totalVenda);
 }
 
 function formatMoney(value) {
@@ -622,7 +663,10 @@ function formatMoney(value) {
 function adicionarItem() {
     editingItemId = null;
     document.getElementById('itemModalTitle').textContent = 'Adicionar Item';
-    document.getElementById('itemNumero').value = itens.length + 1;
+    const proximoNum = itens.length > 0
+        ? Math.max(...itens.map(i => i.numero_item || i.numero || 0)) + 1
+        : 1;
+    document.getElementById('itemNumero').value = proximoNum;
     document.getElementById('itemDescricao').value = '';
     document.getElementById('itemQuantidade').value = '';
     document.getElementById('itemUnidade').value = 'UN';
@@ -633,17 +677,18 @@ function adicionarItem() {
     document.getElementById('itemCustoUnitario').value = '';
     document.getElementById('itemVendaUnitario').value = '';
     recalcularItemTotais();
+    switchItemTab('item-tab-geral');
     document.getElementById('itemModal').classList.add('show');
 }
 
-function abrirEdicaoItem(index) {
-    const item = itens[index];
+function abrirEdicaoItem(itemId) {
+    const item = itens.find(i => i.id === itemId);
     if (!item) return;
-    editingItemId = item.id || index;
+    editingItemId = item.id;
     document.getElementById('itemModalTitle').textContent = 'Editar Item';
-    document.getElementById('itemNumero').value = item.numero_item;
-    document.getElementById('itemDescricao').value = item.descricao;
-    document.getElementById('itemQuantidade').value = item.quantidade;
+    document.getElementById('itemNumero').value = item.numero_item || item.numero || '';
+    document.getElementById('itemDescricao').value = item.descricao || '';
+    document.getElementById('itemQuantidade').value = item.quantidade || '';
     document.getElementById('itemUnidade').value = item.unidade || 'UN';
     document.getElementById('itemMarca').value = item.marca || '';
     document.getElementById('itemModelo').value = item.modelo || '';
@@ -652,24 +697,29 @@ function abrirEdicaoItem(index) {
     document.getElementById('itemCustoUnitario').value = item.custo_unitario || '';
     document.getElementById('itemVendaUnitario').value = item.venda_unitario || '';
     recalcularItemTotais();
+    switchItemTab('item-tab-geral');
     document.getElementById('itemModal').classList.add('show');
 }
 
 function fecharItemModal() {
-    document.getElementById('itemModal').classList.remove('show');
+    const modal = document.getElementById('itemModal');
+    if (modal) modal.classList.remove('show');
     editingItemId = null;
 }
 
 function recalcularItemTotais() {
-    const qtd = parseFloat(document.getElementById('itemQuantidade').value) || 0;
-    const custoUnit = parseFloat(document.getElementById('itemCustoUnitario').value) || 0;
-    const vendaUnit = parseFloat(document.getElementById('itemVendaUnitario').value) || 0;
+    const qtd = parseFloat(document.getElementById('itemQuantidade')?.value) || 0;
+    const custoUnit = parseFloat(document.getElementById('itemCustoUnitario')?.value) || 0;
+    const vendaUnit = parseFloat(document.getElementById('itemVendaUnitario')?.value) || 0;
     const custoTotal = qtd * custoUnit;
     const vendaTotal = qtd * vendaUnit;
     const lucroBruto = vendaTotal - custoTotal;
-    document.getElementById('itemCustoTotal').value = formatMoney(custoTotal);
-    document.getElementById('itemVendaTotal').value = formatMoney(vendaTotal);
-    document.getElementById('itemLucroBruto').value = formatMoney(lucroBruto);
+    const elCT = document.getElementById('itemCustoTotal');
+    const elVT = document.getElementById('itemVendaTotal');
+    const elLB = document.getElementById('itemLucroBruto');
+    if (elCT) elCT.value = formatMoney(custoTotal);
+    if (elVT) elVT.value = formatMoney(vendaTotal);
+    if (elLB) elLB.value = formatMoney(lucroBruto);
 }
 
 async function salvarItem() {
@@ -693,14 +743,11 @@ async function salvarItem() {
     itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
     itemData.lucro_bruto = itemData.venda_total - itemData.custo_total;
 
-    if (!isOnline) {
-        showToast('Sistema offline', 'error');
-        return;
-    }
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
     try {
         let url, method;
-        if (editingItemId !== null && typeof editingItemId === 'number' && itens[editingItemId] && itens[editingItemId].id) {
-            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${itens[editingItemId].id}`;
+        if (editingItemId) {
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${editingItemId}`;
             method = 'PUT';
         } else {
             url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens`;
@@ -711,11 +758,7 @@ async function salvarItem() {
             headers: { 'Content-Type': 'application/json', ...getHeaders() },
             body: JSON.stringify(itemData)
         });
-        if (res.status === 401) {
-            sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
-            return;
-        }
+        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao salvar item');
         const saved = await res.json();
         if (method === 'POST') {
@@ -728,49 +771,169 @@ async function salvarItem() {
         renderItens();
         atualizarTotais();
         showToast('Item salvo com sucesso', 'success');
-    } catch (err) {
-        showToast(err.message, 'error');
-    }
+    } catch (err) { showToast(err.message, 'error'); }
 }
 
-function filterItens() {
-    renderItens();
-}
+function filterItens() { renderItens(); }
 
 function syncItens() {
-    if (currentLicitacaoId) {
-        console.log('🔄 Sincronizando itens da proposta', currentLicitacaoId);
-        carregarItens(currentLicitacaoId);
-        showToast('Itens sincronizados', 'success');
-    } else {
-        showToast('Nenhuma proposta selecionada', 'error');
-    }
-}
-
-function abrirModalCotacao() {
-    showToast('Funcionalidade em desenvolvimento', 'error');
-}
-
-function fecharModalCotacao() {
-    document.getElementById('modalCotacao').classList.remove('show');
-}
-
-function copiarMensagemCotacao() {
-    const msg = document.getElementById('cotacaoMensagem').value;
-    navigator.clipboard.writeText(msg);
-    showToast('Mensagem copiada!', 'success');
-}
-
-function gerarMensagemCotacao() {
-    // Placeholder
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
+    if (!currentLicitacaoId) { showToast('Nenhuma proposta selecionada', 'error'); return; }
+    carregarItens(currentLicitacaoId)
+        .then(() => showToast('Itens sincronizados!', 'success'))
+        .catch(() => showToast('Erro ao sincronizar', 'error'));
 }
 
 function switchItemTab(tabId) {
-    document.querySelectorAll('#itemModal .tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('#itemModal .tab-content').forEach(content => content.classList.remove('active'));
-    const activeBtn = document.querySelector(`#itemModal .tab-btn[onclick*="${tabId}"]`);
+    const modal = document.getElementById('itemModal');
+    if (!modal) return;
+    modal.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    const activeBtn = modal.querySelector(`.tab-btn[onclick*="${tabId}"]`);
     if (activeBtn) activeBtn.classList.add('active');
-    document.getElementById(tabId).classList.add('active');
+    const activeContent = document.getElementById(tabId);
+    if (activeContent) activeContent.classList.add('active');
+}
+
+// ========== COTAÇÃO ==========
+function saudacao() {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12) return 'Bom dia';
+    if (h >= 12 && h < 18) return 'Boa tarde';
+    return 'Boa noite';
+}
+
+function gerarMensagemCotacao(tipo) {
+    const linhas = itens
+        .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
+        .map((item, idx) => {
+            const campo = tipo === 'modelo'
+                ? (item.modelo || item.descricao || '')
+                : (item.descricao || '');
+            const unidade = item.unidade ? ` ${item.unidade}` : '';
+            return `${idx + 1} - ${campo}\nQuantidade: ${item.quantidade}${unidade}`;
+        });
+    if (!linhas.length) return '';
+    return `${saudacao()}!\nGostaria de pedir, por gentileza, um orçamento para:\n\n${linhas.join('\n\n')}`;
+}
+
+function atualizarPreviewCotacao() {
+    const tipo = document.querySelector('input[name="cotacaoTipo"]:checked')?.value || 'descricao';
+    const preview = document.getElementById('cotacaoPreview');
+    if (preview) preview.value = gerarMensagemCotacao(tipo);
+}
+
+function abrirModalCotacao() {
+    if (!itens.length) {
+        showToast('Nenhum item cadastrado nesta proposta', 'error');
+        return;
+    }
+    // Coleta marcas únicas dos itens
+    const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))].sort();
+    if (!marcas.length) {
+        showToast('Nenhum item possui marca cadastrada', 'error');
+        return;
+    }
+    const select = document.getElementById('cotacaoFornecedorSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">Selecione a marca...</option>' +
+        marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+
+    // Reset para tipo descrição
+    const radioDesc = document.querySelector('input[name="cotacaoTipo"][value="descricao"]');
+    if (radioDesc) radioDesc.checked = true;
+
+    atualizarPreviewCotacao();
+
+    const modal = document.getElementById('modalCotacaoItens');
+    if (modal) modal.classList.add('show');
+}
+
+function fecharModalCotacao() {
+    const modal = document.getElementById('modalCotacaoItens');
+    if (modal) modal.classList.remove('show');
+}
+
+async function enviarCotacao() {
+    const marcaSelecionada = document.getElementById('cotacaoFornecedorSelect')?.value;
+    if (!marcaSelecionada) {
+        showToast('Selecione uma marca/fornecedor', 'error');
+        return;
+    }
+    const tipo = document.querySelector('input[name="cotacaoTipo"]:checked')?.value || 'descricao';
+
+    // Filtra itens da marca selecionada para gerar mensagem específica
+    const itensDaMarca = itens.filter(i => (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase());
+    const linhas = itensDaMarca
+        .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
+        .map((item, idx) => {
+            const campo = tipo === 'modelo'
+                ? (item.modelo || item.descricao || '')
+                : (item.descricao || '');
+            const unidade = item.unidade ? ` ${item.unidade}` : '';
+            return `${idx + 1} - ${campo}\nQuantidade: ${item.quantidade}${unidade}`;
+        });
+
+    if (!linhas.length) {
+        showToast('Nenhum item com esta marca para cotar', 'error');
+        return;
+    }
+    const mensagem = `${saudacao()}!\nGostaria de pedir, por gentileza, um orçamento para:\n\n${linhas.join('\n\n')}`;
+
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
+
+    const btn = document.getElementById('btnEnviarCotacao');
+    const label = document.getElementById('btnEnviarCotacaoLabel');
+    if (btn) btn.disabled = true;
+    if (label) label.textContent = 'Buscando...';
+
+    try {
+        const res = await fetch(`${API_URL}/fornecedores?search=${encodeURIComponent(marcaSelecionada)}&limit=20`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Erro ao buscar fornecedor');
+        const resultado = await res.json();
+        const lista = Array.isArray(resultado) ? resultado : (resultado.data || []);
+
+        // Correspondência exata pelo nome (case-insensitive)
+        const fornecedor = lista.find(f =>
+            f.nome.trim().toLowerCase() === marcaSelecionada.trim().toLowerCase()
+        );
+
+        if (!fornecedor) {
+            showToast('Fornecedor não encontrado', 'error');
+            return;
+        }
+
+        const metodo = fornecedor.metodo_envio || 'whatsapp';
+        const msgEncoded = encodeURIComponent(mensagem);
+
+        if (metodo === 'whatsapp') {
+            const celular = (fornecedor.celular || fornecedor.telefone || '').replace(/\D/g, '');
+            if (!celular) {
+                showToast('Fornecedor sem número de WhatsApp cadastrado', 'error');
+                return;
+            }
+            fecharModalCotacao();
+            window.open(`https://wa.me/${celular}?text=${msgEncoded}`, '_blank');
+        } else {
+            if (!fornecedor.email) {
+                showToast('Fornecedor sem e-mail cadastrado', 'error');
+                return;
+            }
+            const proposta = licitacoes.find(l => l.id === currentLicitacaoId);
+            const assunto = encodeURIComponent(
+                `Solicitação de Orçamento${proposta ? ' - Proposta Nº ' + proposta.numero_proposta : ''}`
+            );
+            fecharModalCotacao();
+            window.location.href = `mailto:${fornecedor.email}?subject=${assunto}&body=${msgEncoded}`;
+        }
+    } catch (err) {
+        showToast(err.message || 'Erro ao enviar cotação', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (label) label.textContent = 'Enviar';
+    }
 }
 
 // ========== UTILITÁRIOS ==========
@@ -784,19 +947,6 @@ function showToast(msg, tipo = 'success') {
         d.style.animation = 'slideOutBottom 0.3s ease forwards';
         setTimeout(() => d.remove(), 300);
     }, 3000);
-}
-
-// syncData: recarrega as licitações do servidor
-function syncData() {
-    if (!isOnline) {
-        showToast('Sistema offline', 'error');
-        return;
-    }
-    loadLicitacoes().then(() => {
-        showToast('Dados sincronizados!', 'success');
-    }).catch(() => {
-        showToast('Erro ao sincronizar', 'error');
-    });
 }
 
 // ========== EXPOSIÇÃO GLOBAL ==========
@@ -817,14 +967,15 @@ window.abrirModalVencidos = abrirModalVencidos;
 window.fecharModalVencidos = fecharModalVencidos;
 window.vencidosPageChange = vencidosPageChange;
 window.adicionarItem = adicionarItem;
+window.abrirEdicaoItem = abrirEdicaoItem;
 window.salvarItem = salvarItem;
 window.fecharItemModal = fecharItemModal;
 window.filterItens = filterItens;
 window.syncItens = syncItens;
 window.abrirModalCotacao = abrirModalCotacao;
 window.fecharModalCotacao = fecharModalCotacao;
-window.copiarMensagemCotacao = copiarMensagemCotacao;
-window.gerarMensagemCotacao = gerarMensagemCotacao;
+window.enviarCotacao = enviarCotacao;
+window.atualizarPreviewCotacao = atualizarPreviewCotacao;
 window.switchItemTab = switchItemTab;
 window.toggleStatus = toggleStatus;
 window.recalcularItemTotais = recalcularItemTotais;
