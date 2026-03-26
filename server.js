@@ -508,6 +508,17 @@ app.get('/fornecedores', (req, res) => res.sendFile(path.join(__dirname, 'apps',
 app.get('/licitacoes', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'licitacoes', 'index.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html')));
 
+// Keep-alive: evita que o Render free tier hiberne
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+setInterval(async () => {
+    try {
+        await fetch(`${SELF_URL}/api/health`);
+        console.log('🏓 Keep-alive ping enviado');
+    } catch (err) {
+        console.warn('⚠️ Keep-alive falhou:', err.message);
+    }
+}, 10 * 60 * 1000); // a cada 10 minutos
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
