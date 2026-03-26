@@ -459,7 +459,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     50% { transform: scale(1.1); }
 }
 
-/* TABELA PRINCIPAL */
+/* TABELA PRINCIPAL e TABELA DE ITENS */
 table {
     width: 100%;
     border-collapse: separate;
@@ -663,23 +663,26 @@ input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
 }
-#telaItens .header { margin-bottom: 1rem; }
-#telaItens .table-card { margin-top: 0.5rem; }
 .descricao-cell {
     max-width: 300px;
     word-wrap: break-word;
     white-space: normal;
     text-align: left !important;
 }
-#itensTotaisBar {
+
+/* TOTAIS (barra abaixo da tabela) */
+.totals-bar {
     background: var(--bg-card);
     border-top: 1px solid var(--border-color);
-    margin-bottom: 1.5rem;
+    margin-top: 0.5rem;
+    padding: 1rem;
     display: flex;
     gap: 2rem;
-    padding: 1rem;
     font-size: 10pt;
+    border-radius: 0 0 12px 12px;
 }
+
+/* CHECKBOX ESTILIZADO (igual ao da tabela principal) */
 .checkbox-wrapper {
     display: inline-flex;
     align-items: center;
