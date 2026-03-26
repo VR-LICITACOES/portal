@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(verificarPrazosVencidos, 60000);
 });
 
-// ========== AUTENTICAÇÃO (igual ao Ordem de Compra) ==========
+// ========== AUTENTICAÇÃO ==========
 function verificarAutenticacao() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('sessionToken');
@@ -193,26 +193,84 @@ function filterLicitacoes() {
     renderLicitacoes(filtered);
 }
 
+// Função auxiliar para formatar data de YYYY-MM-DD para DD/MM/YYYY
+function formatDateToBR(dateStr) {
+    if (!dateStr) return '-';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+}
+
 function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => `
-        <tr onclick="viewLicitacao('${l.id}')">
-            <td><strong>${l.numero_proposta}</strong></td>
-            <td>${l.data}</td>
-            <td>${l.hora || '-'}</td>
-            <td>${l.uf || '-'}</td>
-            <td><span class="status-badge ${l.status === 'ENVIADA' ? 'success' : 'warning'}">${l.status}</span></td>
+        <tr>
+            <td style="text-align:center;" onclick="event.stopPropagation()">
+                <div class="checkbox-wrapper">
+                    <input 
+                        type="checkbox" 
+                        id="check-${l.id}" 
+                        class="styled-checkbox"
+                        ${l.status === 'ENVIADA' ? 'checked' : ''}
+                        onchange="toggleStatus('${l.id}')"
+                    >
+                    <label for="check-${l.id}" class="checkbox-label-styled"></label>
+                </div>
+            </td>
+            <td onclick="viewLicitacao('${l.id}')"><strong>${l.numero_proposta}</strong></td>
+            <td onclick="viewLicitacao('${l.id}')">${formatDateToBR(l.data)}</td>
+            <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
+            <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
+            <td onclick="viewLicitacao('${l.id}')">
+                <span class="status-badge ${l.status === 'ENVIADA' ? 'success' : 'warning'}">${l.status}</span>
+            </td>
             <td class="actions-cell" onclick="event.stopPropagation()">
                 <button class="action-btn edit" onclick="editLicitacao('${l.id}')">Editar</button>
                 <button class="action-btn delete" onclick="openDeleteModal('${l.id}')">Excluir</button>
             </td>
         </tr>
     `).join('');
+}
+
+// ========== ALTERNAR STATUS (checkbox na tabela principal) ==========
+async function toggleStatus(id) {
+    const proposta = licitacoes.find(l => l.id === id);
+    if (!proposta) return;
+    const novoStatus = proposta.status === 'ENVIADA' ? 'ABERTA' : 'ENVIADA';
+    if (!isOnline) {
+        showToast('Sistema offline', 'error');
+        // Reverte o checkbox visualmente
+        const checkbox = document.getElementById(`check-${id}`);
+        if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
+        return;
+    }
+    try {
+        const res = await fetch(`${API_URL}/licitacoes/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getHeaders() },
+            body: JSON.stringify({ status: novoStatus })
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado('Sessão expirada');
+            return;
+        }
+        if (!res.ok) throw new Error('Erro ao atualizar status');
+        const updated = await res.json();
+        const index = licitacoes.findIndex(l => l.id === updated.id);
+        if (index !== -1) licitacoes[index] = updated;
+        updateDisplay();
+        showToast(`Proposta ${novoStatus === 'ENVIADA' ? 'enviada' : 'reaberta'} com sucesso!`, 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+        // Reverte checkbox
+        const checkbox = document.getElementById(`check-${id}`);
+        if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
+    }
 }
 
 // ========== CRUD LICITAÇÕES ==========
@@ -337,7 +395,7 @@ function renderVencidosModal(vencidas) {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
                 <td>${l.numero_proposta}</td>
-                <td>${l.data}</td>
+                <td>${formatDateToBR(l.data)}</td>
                 <td>${l.hora || '-'}</td>
             </tr>
         `).join('');
@@ -432,7 +490,7 @@ function mostrarTelaItens() {
                 <div style="overflow-x: auto;">
                     <table style="min-width: 1200px;">
                         <thead>
-                             <tr>
+                            <tr>
                                 <th style="width: 60px;">ITEM</th>
                                 <th style="min-width: 300px;">DESCRIÇÃO</th>
                                 <th style="width: 80px;">QTD</th>
@@ -443,7 +501,7 @@ function mostrarTelaItens() {
                                 <th style="width: 120px;">CUSTO TOTAL</th>
                                 <th style="width: 120px;">VENDA UNT</th>
                                 <th style="width: 120px;">VENDA TOTAL</th>
-                             </tr>
+                            </tr>
                         </thead>
                         <tbody id="itensContainer"></tbody>
                     </table>
@@ -754,5 +812,6 @@ window.fecharModalCotacao = fecharModalCotacao;
 window.copiarMensagemCotacao = copiarMensagemCotacao;
 window.gerarMensagemCotacao = gerarMensagemCotacao;
 window.switchItemTab = switchItemTab;
+window.toggleStatus = toggleStatus;  // <-- importante para o checkbox da tabela principal
 window.toggleEnviarProposta = toggleEnviarProposta;
 window.recalcularItemTotais = recalcularItemTotais;
