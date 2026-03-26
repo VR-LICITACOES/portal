@@ -47,7 +47,6 @@ function renderCalendarDays() {
     
     yearMonthElement.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
     
-    // Obter dias que têm registros
     const diasComRegistros = new Set();
     licitacoes.forEach(l => {
         if (l.data) {
@@ -58,7 +57,6 @@ function renderCalendarDays() {
         }
     });
     
-    // Gerar grade de dias
     const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
     const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
     
@@ -68,12 +66,10 @@ function renderCalendarDays() {
     });
     html += '</div><div class="calendar-days-grid">';
     
-    // Dias vazios do início
     for (let i = 0; i < firstDay; i++) {
         html += '<div class="calendar-day empty"></div>';
     }
     
-    // Dias do mês
     for (let d = 1; d <= daysInMonth; d++) {
         const hasRecord = diasComRegistros.has(d);
         const isToday = (calendarYear === new Date().getFullYear() && 
@@ -97,7 +93,6 @@ function selectDay(day) {
     toggleCalendar();
 }
 
-// Fechar o calendário ao clicar fora dele
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('calendarModal');
     if (modal) {
