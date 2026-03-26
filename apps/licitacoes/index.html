@@ -16,21 +16,16 @@
                     <h1>Licitações</h1>
                     <div id="connectionStatus" class="connection-status offline"><span class="status-dot"></span></div>
                 </div>
-                <button onclick="openFormModal()" class="btn-new-order-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Nova Proposta
-                </button>
+                <!-- Header right: empty, buttons moved to search bar -->
+                <div></div>
             </div>
 
             <!-- Dashboard cards -->
             <div class="dashboard-grid">
-                <div class="stat-card"><div class="stat-icon stat-icon-default"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div><div class="stat-content"><div class="stat-value" id="totalLicitacoes">0</div><div class="stat-label">Licitações</div></div></div>
-                <div class="stat-card"><div class="stat-icon stat-icon-success"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div class="stat-content"><div class="stat-value stat-value-success" id="totalEnviadas">0</div><div class="stat-label">Enviadas</div></div></div>
-                <div class="stat-card" id="prazoVencidoCard" onclick="abrirModalVencidos()"><div class="stat-icon stat-icon-danger"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><div class="stat-content"><div class="stat-value stat-value-danger" id="totalVencidas">0</div><div class="stat-label">Prazo Vencido</div></div></div>
-                <div class="stat-card"><div class="stat-icon stat-icon-warning-light"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div><div class="stat-content"><div class="stat-value stat-value-warning" id="totalAbertas">0</div><div class="stat-label">Abertas</div></div></div>
+                <div class="stat-card no-select"><div class="stat-icon stat-icon-default"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div><div class="stat-content"><div class="stat-value" id="totalLicitacoes">0</div><div class="stat-label">Licitações</div></div></div>
+                <div class="stat-card no-select"><div class="stat-icon stat-icon-success"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div class="stat-content"><div class="stat-value stat-value-success" id="totalEnviadas">0</div><div class="stat-label">Enviadas</div></div></div>
+                <div class="stat-card no-select" id="prazoVencidoCard" onclick="abrirModalVencidos()"><div class="stat-icon stat-icon-danger"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><div class="stat-content"><div class="stat-value stat-value-danger" id="totalVencidas">0</div><div class="stat-label">Urgente</div></div></div>
+                <div class="stat-card no-select"><div class="stat-icon stat-icon-warning-light"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div><div class="stat-content"><div class="stat-value stat-value-warning" id="totalAbertas">0</div><div class="stat-label">Pendentes</div></div></div>
             </div>
 
             <!-- Search bar + filters -->
@@ -49,7 +44,9 @@
                             <button onclick="changeMonth(1)" class="month-nav-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                         </div>
                     </div>
+                    <!-- Icon buttons: calendar, add, sync -->
                     <button class="calendar-btn" onclick="toggleCalendar()" title="Calendário"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                    <button class="calendar-btn" onclick="openFormModal()" title="Nova Proposta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
                     <button class="calendar-btn" onclick="syncData()" title="Sincronizar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
                 </div>
             </div>
