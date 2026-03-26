@@ -388,7 +388,7 @@ function renderVencidosModal(vencidas) {
     if (!tbody) return;
     
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
+        tbody.innerHTML = '.<td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
@@ -467,8 +467,7 @@ function mostrarTelaItens() {
                     <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;">${tituloProposta}</p>
                 </div>
             </div>
-            <!-- Botão vazio para manter estrutura (não há botão de nova proposta aqui) -->
-            <div></div>
+            <div></div> <!-- espaço vazio para manter a estrutura -->
         </div>
 
         <!-- SEARCH BAR COM ÍCONES À DIREITA (igual à principal) -->
@@ -480,7 +479,7 @@ function mostrarTelaItens() {
                 </svg>
                 <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
                 
-                <!-- Ícones à direita (igual aos botões da principal) -->
+                <!-- Ícones à direita (exatamente como os botões da principal) -->
                 <div class="search-bar-filters" style="margin-left: auto;">
                     <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -527,11 +526,12 @@ function mostrarTelaItens() {
                             <th>CUSTO TOTAL</th>
                             <th>VENDA UNT</th>
                             <th>VENDA TOTAL</th>
-                        </thead>
-                        <tbody id="itensContainer"></tbody>
-                    </table>
-                </div>
+                        </tr>
+                    </thead>
+                    <tbody id="itensContainer"></tbody>
+                </table>
             </div>
+        </div>
 
         <!-- TOTAIS (barra igual à principal) -->
         <div class="totals-bar">
@@ -544,11 +544,7 @@ function mostrarTelaItens() {
     tela.style.display = 'block';
 }
 
-async function toggleEnviarProposta() {
-    // Esta função foi removida da tela de itens, pois não há checkbox
-    // Mantida apenas para compatibilidade
-}
-
+// ========== CRUD DE ITENS ==========
 async function carregarItens(licitacaoId) {
     if (!isOnline) return;
     try {
@@ -580,7 +576,7 @@ function renderItens() {
         return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
