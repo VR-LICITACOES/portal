@@ -663,24 +663,32 @@ input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
 }
+/* Melhor quebra de texto nas tabelas */
 .descricao-cell {
-    max-width: 300px;
-    word-wrap: break-word;
+    word-break: break-word;
     white-space: normal;
-    text-align: left !important;
+    max-width: 300px;
 }
 
-/* TOTAIS (barra abaixo da tabela) */
+.modal-overlay {
+    z-index: 10000;
+}
+
+
+/* ============================================
+   Ajustes na barra de totais (sem borda/fundo)
+   ============================================ */
 .totals-bar {
-    background: var(--bg-card);
-    border-top: 1px solid var(--border-color);
-    margin-top: 0;
-    padding: 1rem;
+    background: transparent;
+    border: none;
+    margin: 1rem 0 0 0;
+    padding: 0.5rem 0;
     display: flex;
     gap: 2rem;
-    font-size: 10pt;
-    border-radius: 0 0 12px 12px;
+    font-size: 0.9rem;
 }
+
+
 
 /* CHECKBOX ESTILIZADO (apenas na tabela principal) */
 .checkbox-wrapper {
