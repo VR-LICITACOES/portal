@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO
+// ========== CONFIGURAÇÃO ==========
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:10000/api'
     : `${window.location.origin}/api`;
@@ -13,13 +13,9 @@ let sessionToken = null;
 let consecutive401Count = 0;
 const MAX_401_BEFORE_LOGOUT = 3;
 let currentMonth = new Date();
-let isAllMonths = false;
 let currentFetchController = null;
 let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
-
-// Seleção em massa
-let selectedLicitacoes = new Set();
 
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
@@ -29,9 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMonthDisplay();
     checkServerStatus();
     setInterval(checkServerStatus, 15000);
-    setInterval(() => {
-        if (isOnline) loadLicitacoes();
-    }, 30000);
+    setInterval(() => { if (isOnline) loadLicitacoes(); }, 30000);
     setInterval(verificarPrazosVencidos, 60000);
 });
 
@@ -203,14 +197,11 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => `
         <tr onclick="viewLicitacao('${l.id}')">
-            <td style="text-align:center;" onclick="event.stopPropagation()">
-                <input type="checkbox" class="licitacao-checkbox" data-id="${l.id}" ${selectedLicitacoes.has(l.id) ? 'checked' : ''} onclick="toggleSelecionarLicitacao('${l.id}', this.checked); event.stopPropagation();">
-            </td>
             <td><strong>${l.numero_proposta}</strong></td>
             <td>${l.data}</td>
             <td>${l.hora || '-'}</td>
@@ -222,74 +213,6 @@ function renderLicitacoes(lista) {
             </td>
         </tr>
     `).join('');
-    const btnExcluir = document.getElementById('btnExcluirSelecionados');
-    if (btnExcluir) {
-        btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
-    }
-}
-
-// ========== SELEÇÃO EM MASSA ==========
-function toggleSelecionarLicitacao(id, isChecked) {
-    if (isChecked) {
-        selectedLicitacoes.add(id);
-    } else {
-        selectedLicitacoes.delete(id);
-    }
-    const btnExcluir = document.getElementById('btnExcluirSelecionados');
-    if (btnExcluir) btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
-    const selectAll = document.getElementById('selectAllCheckbox');
-    if (selectAll) {
-        const allCheckboxes = document.querySelectorAll('.licitacao-checkbox');
-        selectAll.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
-    }
-}
-
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAllCheckbox');
-    const isChecked = selectAll.checked;
-    const checkboxes = document.querySelectorAll('.licitacao-checkbox');
-    checkboxes.forEach(cb => {
-        const id = cb.getAttribute('data-id');
-        cb.checked = isChecked;
-        if (isChecked) {
-            selectedLicitacoes.add(id);
-        } else {
-            selectedLicitacoes.delete(id);
-        }
-    });
-    const btnExcluir = document.getElementById('btnExcluirSelecionados');
-    if (btnExcluir) btnExcluir.style.display = selectedLicitacoes.size > 0 ? 'inline-flex' : 'none';
-}
-
-async function excluirSelecionados() {
-    if (selectedLicitacoes.size === 0) return;
-    if (!confirm(`Tem certeza que deseja excluir ${selectedLicitacoes.size} proposta(s)?`)) return;
-    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
-    const ids = Array.from(selectedLicitacoes);
-    try {
-        for (const id of ids) {
-            const res = await fetch(`${API_URL}/licitacoes/${id}`, {
-                method: 'DELETE',
-                headers: getHeaders()
-            });
-            if (res.status === 401) {
-                sessionStorage.removeItem('licitacoesSession');
-                mostrarTelaAcessoNegado('Sessão expirada');
-                return;
-            }
-            if (!res.ok) throw new Error(`Erro ao excluir proposta ${id}`);
-        }
-        licitacoes = licitacoes.filter(l => !selectedLicitacoes.has(l.id));
-        selectedLicitacoes.clear();
-        showToast(`${ids.length} proposta(s) excluída(s)`, 'success');
-        updateDisplay();
-        const selectAll = document.getElementById('selectAllCheckbox');
-        if (selectAll) selectAll.checked = false;
-        const btnExcluir = document.getElementById('btnExcluirSelecionados');
-        if (btnExcluir) btnExcluir.style.display = 'none';
-    } catch (err) {
-        showToast(err.message, 'error');
-    }
 }
 
 // ========== CRUD LICITAÇÕES ==========
@@ -409,7 +332,7 @@ function renderVencidosModal(vencidas) {
     if (!tbody) return;
     
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
+        tbody.innerHTML = '.<td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
@@ -448,12 +371,11 @@ function fecharModalVencidos() {
     document.getElementById('modalVencidos').classList.remove('show');
 }
 
-// ========== VERIFICAR PRAZOS VENCIDOS ==========
 function verificarPrazosVencidos() {
     updateStats();
 }
 
-// ========== VISUALIZAR PROPOSTA (abre tela de itens) ==========
+// ========== TELA DE ITENS ==========
 function viewLicitacao(id) {
     currentLicitacaoId = id;
     mostrarTelaItens();
@@ -467,7 +389,6 @@ function voltar() {
     itens = [];
 }
 
-// ========== TELA DE ITENS (criada dinamicamente) ==========
 function mostrarTelaItens() {
     document.querySelector('.container').style.display = 'none';
     let tela = document.getElementById('telaItens');
@@ -485,14 +406,17 @@ function mostrarTelaItens() {
                 </div>
                 <div style="display: flex; gap: 0.75rem; align-items:center;">
                     <button onclick="adicionarItem()" class="btn-add-item">+ Item</button>
-                    <button onclick="abrirModalIntervalo()" class="btn-add-interval">+ Intervalo</button>
-                    <button onclick="abrirModalExcluirItens()" class="btn-delete-selected">Excluir</button>
                     <button onclick="abrirModalCotacao()" class="btn-cotacao" title="Cotação">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                     </button>
                     <button onclick="syncItens()" class="btn-sync" title="Sincronizar">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                     </button>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="check-enviada" class="styled-checkbox" onchange="toggleEnviarProposta()">
+                        <label for="check-enviada" class="checkbox-label-styled"></label>
+                    </div>
+                    <span style="font-size: 0.9rem;">Proposta Enviada</span>
                     <button onclick="voltar()" class="btn-back" title="Voltar">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     </button>
@@ -502,13 +426,6 @@ function mostrarTelaItens() {
                 <div class="search-bar">
                     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
-                    <div class="search-bar-filters">
-                        <div class="filter-dropdown-inline">
-                            <select id="filterMarcaItens" onchange="filterItens()">
-                                <option value="">Marca</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="card table-card">
@@ -516,7 +433,6 @@ function mostrarTelaItens() {
                     <table style="min-width: 1200px;">
                         <thead>
                             <tr>
-                                <th style="width: 40px; text-align: center;">✓</th>
                                 <th style="width: 60px;">ITEM</th>
                                 <th style="min-width: 300px;">DESCRIÇÃO</th>
                                 <th style="width: 80px;">QTD</th>
@@ -542,6 +458,41 @@ function mostrarTelaItens() {
     if (lic) {
         const titulo = document.getElementById('tituloItens');
         if (titulo) titulo.textContent = `Proposta Nº ${lic.numero_proposta}`;
+        const checkbox = document.getElementById('check-enviada');
+        if (checkbox) checkbox.checked = (lic.status === 'ENVIADA');
+    }
+}
+
+async function toggleEnviarProposta() {
+    const proposta = licitacoes.find(l => l.id === currentLicitacaoId);
+    if (!proposta) return;
+    const novoStatus = proposta.status === 'ENVIADA' ? 'ABERTA' : 'ENVIADA';
+    if (!isOnline) {
+        showToast('Sistema offline', 'error');
+        return;
+    }
+    try {
+        const res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getHeaders() },
+            body: JSON.stringify({ status: novoStatus })
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado('Sessão expirada');
+            return;
+        }
+        if (!res.ok) throw new Error('Erro ao atualizar status');
+        const updated = await res.json();
+        const index = licitacoes.findIndex(l => l.id === updated.id);
+        if (index !== -1) licitacoes[index] = updated;
+        updateDisplay();
+        // Atualizar checkbox na tela de itens
+        const checkbox = document.getElementById('check-enviada');
+        if (checkbox) checkbox.checked = (novoStatus === 'ENVIADA');
+        showToast(`Proposta ${novoStatus === 'ENVIADA' ? 'enviada' : 'reaberta'} com sucesso!`, 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
     }
 }
 
@@ -571,28 +522,15 @@ function renderItens() {
     const tbody = document.getElementById('itensContainer');
     if (!tbody) return;
     const search = document.getElementById('searchItens')?.value.toLowerCase() || '';
-    const marcaFiltro = document.getElementById('filterMarcaItens')?.value;
-    const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))];
-    const marcaSelect = document.getElementById('filterMarcaItens');
-    if (marcaSelect && marcas.length) {
-        const current = marcaSelect.value;
-        marcaSelect.innerHTML = '<option value="">Marca</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
-        marcaSelect.value = current;
-    }
     const filtered = itens.filter(item => {
-        const matchSearch = item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
-        const matchMarca = !marcaFiltro || item.marca === marcaFiltro;
-        return matchSearch && matchMarca;
+        return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
         <tr onclick="abrirEdicaoItem(${item.id || idx})" style="cursor:pointer;">
-            <td style="text-align:center;" onclick="event.stopPropagation()">
-                <input type="checkbox" class="item-checkbox" data-id="${item.id || idx}" onclick="event.stopPropagation()">
-            </td>
             <td>${item.numero_item || idx+1}</td>
             <td class="descricao-cell">${item.descricao || ''}</td>
             <td>${item.quantidade || 0}</td>
@@ -631,11 +569,14 @@ function adicionarItem() {
     document.getElementById('itemNumero').value = itens.length + 1;
     document.getElementById('itemDescricao').value = '';
     document.getElementById('itemQuantidade').value = '';
-    document.getElementById('itemUnidade').value = '';
+    document.getElementById('itemUnidade').value = 'UN';
     document.getElementById('itemMarca').value = '';
     document.getElementById('itemModelo').value = '';
+    document.getElementById('itemPrazoEntrega').value = '';
+    document.getElementById('itemFrete').value = '';
     document.getElementById('itemCustoUnitario').value = '';
     document.getElementById('itemVendaUnitario').value = '';
+    recalcularItemTotais();
     document.getElementById('itemModal').classList.add('show');
 }
 
@@ -647,17 +588,32 @@ function abrirEdicaoItem(index) {
     document.getElementById('itemNumero').value = item.numero_item;
     document.getElementById('itemDescricao').value = item.descricao;
     document.getElementById('itemQuantidade').value = item.quantidade;
-    document.getElementById('itemUnidade').value = item.unidade || '';
+    document.getElementById('itemUnidade').value = item.unidade || 'UN';
     document.getElementById('itemMarca').value = item.marca || '';
     document.getElementById('itemModelo').value = item.modelo || '';
+    document.getElementById('itemPrazoEntrega').value = item.prazo_entrega || '';
+    document.getElementById('itemFrete').value = item.frete || '';
     document.getElementById('itemCustoUnitario').value = item.custo_unitario || '';
     document.getElementById('itemVendaUnitario').value = item.venda_unitario || '';
+    recalcularItemTotais();
     document.getElementById('itemModal').classList.add('show');
 }
 
 function fecharItemModal() {
     document.getElementById('itemModal').classList.remove('show');
     editingItemId = null;
+}
+
+function recalcularItemTotais() {
+    const qtd = parseFloat(document.getElementById('itemQuantidade').value) || 0;
+    const custoUnit = parseFloat(document.getElementById('itemCustoUnitario').value) || 0;
+    const vendaUnit = parseFloat(document.getElementById('itemVendaUnitario').value) || 0;
+    const custoTotal = qtd * custoUnit;
+    const vendaTotal = qtd * vendaUnit;
+    const lucroBruto = vendaTotal - custoTotal;
+    document.getElementById('itemCustoTotal').value = formatMoney(custoTotal);
+    document.getElementById('itemVendaTotal').value = formatMoney(vendaTotal);
+    document.getElementById('itemLucroBruto').value = formatMoney(lucroBruto);
 }
 
 async function salvarItem() {
@@ -669,7 +625,9 @@ async function salvarItem() {
         marca: document.getElementById('itemMarca').value.trim(),
         modelo: document.getElementById('itemModelo').value.trim(),
         custo_unitario: parseFloat(document.getElementById('itemCustoUnitario').value) || 0,
-        venda_unitario: parseFloat(document.getElementById('itemVendaUnitario').value) || 0
+        venda_unitario: parseFloat(document.getElementById('itemVendaUnitario').value) || 0,
+        prazo_entrega: document.getElementById('itemPrazoEntrega').value.trim(),
+        frete: parseFloat(document.getElementById('itemFrete').value) || 0
     };
     if (!itemData.descricao || isNaN(itemData.quantidade) || itemData.quantidade <= 0) {
         showToast('Descrição e quantidade são obrigatórios', 'error');
@@ -677,6 +635,7 @@ async function salvarItem() {
     }
     itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
     itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
+    itemData.lucro_bruto = itemData.venda_total - itemData.custo_total;
     
     if (!isOnline) {
         showToast('Sistema offline', 'error');
@@ -726,14 +685,6 @@ function syncItens() {
     if (currentLicitacaoId) carregarItens(currentLicitacaoId);
 }
 
-function abrirModalIntervalo() {
-    showToast('Funcionalidade em desenvolvimento', 'error');
-}
-
-function abrirModalExcluirItens() {
-    showToast('Funcionalidade em desenvolvimento', 'error');
-}
-
 function abrirModalCotacao() {
     showToast('Funcionalidade em desenvolvimento', 'error');
 }
@@ -752,6 +703,14 @@ function gerarMensagemCotacao() {
     // Placeholder
 }
 
+function switchItemTab(tabId) {
+    document.querySelectorAll('#itemModal .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('#itemModal .tab-content').forEach(content => content.classList.remove('active'));
+    const activeBtn = document.querySelector(`#itemModal .tab-btn[onclick*="${tabId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
 // ========== UTILITÁRIOS ==========
 function showToast(msg, tipo = 'success') {
     document.querySelectorAll('.floating-message').forEach(m => m.remove());
@@ -765,6 +724,10 @@ function showToast(msg, tipo = 'success') {
     }, 3000);
 }
 
+function syncData() {
+    loadLicitacoes();
+}
+
 // ========== EXPOSIÇÃO GLOBAL ==========
 window.openFormModal = openFormModal;
 window.closeFormModal = closeFormModal;
@@ -774,7 +737,7 @@ window.openDeleteModal = openDeleteModal;
 window.closeDeleteModal = closeDeleteModal;
 window.confirmarExclusao = confirmarExclusao;
 window.filterLicitacoes = filterLicitacoes;
-window.syncData = loadLicitacoes;
+window.syncData = syncData;
 window.changeMonth = changeMonth;
 window.toggleCalendar = toggleCalendar;
 window.viewLicitacao = viewLicitacao;
@@ -787,12 +750,10 @@ window.salvarItem = salvarItem;
 window.fecharItemModal = fecharItemModal;
 window.filterItens = filterItens;
 window.syncItens = syncItens;
-window.abrirModalIntervalo = abrirModalIntervalo;
-window.abrirModalExcluirItens = abrirModalExcluirItens;
 window.abrirModalCotacao = abrirModalCotacao;
 window.fecharModalCotacao = fecharModalCotacao;
 window.copiarMensagemCotacao = copiarMensagemCotacao;
 window.gerarMensagemCotacao = gerarMensagemCotacao;
-window.toggleSelectAll = toggleSelectAll;
-window.excluirSelecionados = excluirSelecionados;
-window.toggleSelecionarLicitacao = toggleSelecionarLicitacao;
+window.switchItemTab = switchItemTab;
+window.toggleEnviarProposta = toggleEnviarProposta;
+window.recalcularItemTotais = recalcularItemTotais;
