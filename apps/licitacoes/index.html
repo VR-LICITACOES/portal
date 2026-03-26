@@ -165,9 +165,9 @@
                     </div>
                     <div style="overflow-x: auto;">
                         <table style="width:100%;">
-                            <thead> <tr><th>Nº Proposta</th><th>Data</th><th>Hora</th></tr> </thead>
+                            <thead> <tr><th>Nº Proposta</th><th>Data</th><th>Hora</th> </thead>
                             <tbody id="vencidosTableBody"></tbody>
-                        </table>
+                         </table>
                     </div>
                     <div id="vencidosPaginacao" class="paginacao-wrapper" style="margin-top:1rem;"></div>
                     <div class="modal-actions">
@@ -301,14 +301,17 @@
                 <div style="overflow-x: auto;">
                     <table style="min-width: 800px;">
                         <thead>
-                             <tr>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <span style="font-size: 1.1rem;">✓</span>
+                                </th>
                                 <th>Nº Proposta</th>
                                 <th>Data</th>
                                 <th>Hora</th>
                                 <th>UF</th>
                                 <th>Status</th>
                                 <th style="text-align: center;">Ações</th>
-                             </tr>
+                            </tr>
                         </thead>
                         <tbody id="licitacoesContainer"></tbody>
                     </table>
@@ -320,7 +323,8 @@
     <!-- TELA DE ITENS (inserida dinamicamente) -->
     <div id="telaItens" style="display:none;"></div>
 
-    <script src="script.js"></script>
+    <!-- Ordem correta dos scripts: primeiro calendar.js, depois script.js -->
     <script src="calendar.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
