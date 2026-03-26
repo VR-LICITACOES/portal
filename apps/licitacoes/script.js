@@ -204,7 +204,7 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '.<td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => `
@@ -400,7 +400,7 @@ function renderVencidosModal(vencidas) {
     if (!tbody) return;
     
     if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
+        tbody.innerHTML = '.<td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
@@ -459,20 +459,16 @@ function voltar() {
 }
 
 function mostrarTelaItens() {
-    console.log('mostrarTelaItens chamada');
     document.querySelector('.container').style.display = 'none';
     let tela = document.getElementById('telaItens');
     
-    // Se a div não existe, cria. Se já existe, recria o conteúdo
     if (!tela) {
-        console.log('Criando div telaItens');
         tela = document.createElement('div');
         tela.id = 'telaItens';
         tela.className = 'container';
         document.body.querySelector('.app-content').appendChild(tela);
     }
     
-    // Recria o HTML interno sempre que a tela é aberta
     tela.innerHTML = `
         <div class="header">
             <div class="header-left">
@@ -482,52 +478,83 @@ function mostrarTelaItens() {
                 </div>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items:center;">
-                <button onclick="adicionarItem()" class="btn-add-item">+ Item</button>
-                <button onclick="abrirModalCotacao()" class="btn-cotacao" title="Cotação">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                 </button>
-                <button onclick="syncItens()" class="btn-sync" title="Sincronizar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <button onclick="abrirModalCotacao()" class="btn-icon" title="Email">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
                 </button>
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="check-enviada" class="styled-checkbox" onchange="toggleEnviarProposta()">
-                    <label for="check-enviada" class="checkbox-label-styled"></label>
-                </div>
-                <span style="font-size: 0.9rem;">Proposta Enviada</span>
-                <button onclick="voltar()" class="btn-back" title="Voltar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <button onclick="syncItens()" class="btn-icon" title="Sincronizar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                </button>
+                <button onclick="voltar()" class="btn-icon" title="Voltar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
                 </button>
             </div>
         </div>
         <div class="search-bar-wrapper">
             <div class="search-bar">
-                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
                 <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
             </div>
         </div>
         <div class="card table-card">
             <div style="overflow-x: auto;">
-                <table style="min-width: 1200px;">
+                <table style="min-width: 1000px;">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">ITEM</th>
-                            <th style="min-width: 300px;">DESCRIÇÃO</th>
-                            <th style="width: 80px;">QTD</th>
-                            <th style="width: 80px;">UND</th>
-                            <th style="width: 120px;">MARCA</th>
-                            <th style="width: 120px;">MODELO</th>
-                            <th style="width: 120px;">CUSTO UNT</th>
-                            <th style="width: 120px;">CUSTO TOTAL</th>
-                            <th style="width: 120px;">VENDA UNT</th>
-                            <th style="width: 120px;">VENDA TOTAL</th>
+                            <th>ITEM</th>
+                            <th style="min-width: 250px;">DESCRIÇÃO</th>
+                            <th>QTD</th>
+                            <th>UND</th>
+                            <th>MARCA</th>
+                            <th>MODELO</th>
+                            <th>CUSTO UNT</th>
+                            <th>CUSTO TOTAL</th>
+                            <th>VENDA UNT</th>
+                            <th>VENDA TOTAL</th>
                         </tr>
                     </thead>
                     <tbody id="itensContainer"></tbody>
                 </table>
             </div>
         </div>
-        <div id="itensTotaisBar" style="display:flex;gap:2rem;padding:1rem;font-size:10pt;"></div>
+        <div id="itensTotaisBar" style="display: flex; gap: 2rem; padding: 1rem; font-size: 10pt; border-top: 1px solid var(--border-color);">
+            <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
+            <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
+            <span><strong>MARGEM:</strong> <span id="totalMargem">0%</span></span>
+        </div>
     `;
+    
+    // Adiciona checkbox de "Proposta Enviada" ao lado dos botões
+    const headerRight = tela.querySelector('.header > div:last-child');
+    if (headerRight && !headerRight.querySelector('.checkbox-wrapper')) {
+        const checkboxDiv = document.createElement('div');
+        checkboxDiv.className = 'checkbox-wrapper';
+        checkboxDiv.style.marginLeft = 'auto';
+        checkboxDiv.innerHTML = `
+            <input type="checkbox" id="check-enviada" class="styled-checkbox" onchange="toggleEnviarProposta()">
+            <label for="check-enviada" class="checkbox-label-styled"></label>
+            <span style="font-size: 0.9rem; margin-left: 8px;">Proposta Enviada</span>
+        `;
+        headerRight.appendChild(checkboxDiv);
+    }
     
     tela.style.display = 'block';
     const lic = licitacoes.find(l => l.id === currentLicitacaoId);
@@ -581,11 +608,7 @@ async function toggleEnviarProposta() {
 
 // ========== CRUD DE ITENS ==========
 async function carregarItens(licitacaoId) {
-    console.log('Carregando itens da proposta', licitacaoId);
-    if (!isOnline) {
-        console.log('Offline, não carrega itens');
-        return;
-    }
+    if (!isOnline) return;
     try {
         const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, {
             headers: getHeaders()
@@ -597,15 +620,13 @@ async function carregarItens(licitacaoId) {
         }
         if (!res.ok) throw new Error('Erro ao carregar itens');
         itens = await res.json();
-        console.log(`${itens.length} itens carregados`);
         renderItens();
         atualizarTotais();
     } catch (err) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
-        // Garante que a tabela mostre "Nenhum item" mesmo com erro
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -617,7 +638,7 @@ function renderItens() {
         return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
@@ -639,14 +660,14 @@ function renderItens() {
 function atualizarTotais() {
     const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
-    const bar = document.getElementById('itensTotaisBar');
-    if (bar) {
-        bar.innerHTML = `
-            <strong>💰 CUSTO TOTAL:</strong> ${formatMoney(totalCusto)} &nbsp;&nbsp;
-            <strong>💵 VENDA TOTAL:</strong> ${formatMoney(totalVenda)} &nbsp;&nbsp;
-            <strong>📈 MARGEM:</strong> ${totalCusto ? ((totalVenda - totalCusto) / totalCusto * 100).toFixed(2) : 0}%
-        `;
-    }
+    const margem = totalCusto ? ((totalVenda - totalCusto) / totalCusto * 100).toFixed(2) : 0;
+    
+    const totalCustoSpan = document.getElementById('totalCusto');
+    const totalVendaSpan = document.getElementById('totalVenda');
+    const totalMargemSpan = document.getElementById('totalMargem');
+    if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
+    if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
+    if (totalMargemSpan) totalMargemSpan.textContent = `${margem}%`;
 }
 
 function formatMoney(value) {
