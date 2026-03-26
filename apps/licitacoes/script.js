@@ -1,4 +1,3 @@
-// CONFIGURAÇÃO
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:10000/api'
     : `${window.location.origin}/api`;
@@ -26,13 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMonthDisplay();
     checkServerStatus();
     setInterval(checkServerStatus, 15000);
-    setInterval(() => {
-        if (isOnline) loadLicitacoes();
-    }, 30000);
+    setInterval(() => { if (isOnline) loadLicitacoes(); }, 30000);
     setInterval(verificarPrazosVencidos, 60000);
 });
 
-// ========== AUTENTICAÇÃO ==========
 function verificarAutenticacao() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('sessionToken');
@@ -55,11 +51,8 @@ function mostrarTelaAcessoNegado() {
     `;
 }
 
-function inicializarApp() {
-    loadLicitacoes();
-}
+function inicializarApp() { loadLicitacoes(); }
 
-// ========== CONEXÃO ==========
 function getHeaders() {
     const h = { Accept: 'application/json' };
     if (sessionToken) h['X-Session-Token'] = sessionToken;
@@ -89,7 +82,7 @@ async function checkServerStatus() {
             consecutive401Count++;
             if (consecutive401Count >= MAX_401_BEFORE_LOGOUT) {
                 sessionStorage.removeItem('licitacoesSession');
-                mostrarTelaAcessoNegado('Sua sessão expirou');
+                mostrarTelaAcessoNegado();
             }
             return;
         }
@@ -109,7 +102,6 @@ function updateConnectionStatus() {
     if (el) el.className = isOnline ? 'connection-status online' : 'connection-status offline';
 }
 
-// ========== NAVEGAÇÃO DE MÊS ==========
 function updateMonthDisplay() {
     const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const monthName = months[currentMonth.getMonth()];
@@ -123,7 +115,6 @@ function changeMonth(direction) {
     loadLicitacoes();
 }
 
-// ========== CARREGAR LICITAÇÕES ==========
 async function loadLicitacoes() {
     if (!isOnline) return;
     if (currentFetchController) currentFetchController.abort();
@@ -131,19 +122,17 @@ async function loadLicitacoes() {
     const signal = currentFetchController.signal;
 
     let url = `${API_URL}/licitacoes?mes=${currentMonth.getMonth()+1}&ano=${currentMonth.getFullYear()}`;
-
     try {
         const res = await fetch(url, { method: 'GET', headers: getHeaders(), signal });
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sua sessão expirou');
+            mostrarTelaAcessoNegado();
             return;
         }
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         licitacoes = await res.json();
         updateDisplay();
         verificarPrazosVencidos();
-        // Atualizar calendário se estiver aberto
         if (typeof refreshCalendarIfOpen === 'function') refreshCalendarIfOpen();
     } catch (err) {
         if (err.name !== 'AbortError') console.error('Erro ao carregar licitações:', err);
@@ -167,8 +156,7 @@ function updateStats() {
     document.getElementById('totalEnviadas').textContent = enviadas;
     document.getElementById('totalAbertas').textContent = abertas;
     document.getElementById('totalVencidas').textContent = vencidas;
-    
-    // Adiciona badge de alerta se houver vencidas
+
     const card = document.getElementById('prazoVencidoCard');
     if (vencidas > 0) {
         card.classList.add('has-alert');
@@ -221,7 +209,6 @@ function renderLicitacoes(lista) {
     `).join('');
 }
 
-// ========== CRUD LICITAÇÕES ==========
 function openFormModal(editId = null) {
     editingId = editId;
     document.getElementById('formTitle').textContent = editId ? 'Editar Proposta' : 'Nova Proposta';
@@ -271,7 +258,7 @@ async function salvarLicitacao() {
         }, 15000);
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
+            mostrarTelaAcessoNegado();
             return;
         }
         if (!res.ok) throw new Error((await res.json()).error || 'Erro');
@@ -306,7 +293,7 @@ async function confirmarExclusao() {
         });
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
+            mostrarTelaAcessoNegado();
             return;
         }
         if (!res.ok) throw new Error('Erro ao excluir');
@@ -319,7 +306,6 @@ async function confirmarExclusao() {
     }
 }
 
-// ========== MODAL PRAZO VENCIDO ==========
 function abrirModalVencidos() {
     const hoje = new Date().toISOString().split('T')[0];
     const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
@@ -333,10 +319,8 @@ function renderVencidosModal(vencidas) {
     const end = start + VENCIDOS_PAGE_SIZE;
     const pageData = vencidas.slice(start, end);
     const totalPages = Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
-    
     const tbody = document.getElementById('vencidosTableBody');
     if (!tbody) return;
-    
     if (pageData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
@@ -348,8 +332,6 @@ function renderVencidosModal(vencidas) {
             </tr>
         `).join('');
     }
-    
-    // Paginação
     const pagContainer = document.getElementById('vencidosPaginacao');
     if (pagContainer && totalPages > 1) {
         let pagHtml = '<div class="paginacao-btns">';
@@ -378,14 +360,10 @@ function fecharModalVencidos() {
     document.getElementById('modalVencidos').classList.remove('show');
 }
 
-// ========== VERIFICAR PRAZOS VENCIDOS ==========
 function verificarPrazosVencidos() {
-    const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
-    updateStats(); // atualiza o badge
+    updateStats();
 }
 
-// ========== VISUALIZAR PROPOSTA (abre tela de itens) ==========
 function viewLicitacao(id) {
     currentLicitacaoId = id;
     mostrarTelaItens();
@@ -399,7 +377,6 @@ function voltar() {
     itens = [];
 }
 
-// ========== TELA DE ITENS (criada dinamicamente) ==========
 function mostrarTelaItens() {
     document.querySelector('.container').style.display = 'none';
     let tela = document.getElementById('telaItens');
@@ -410,24 +387,15 @@ function mostrarTelaItens() {
         tela.innerHTML = `
             <div class="header">
                 <div class="header-left">
-                    <div>
-                        <h1>Itens da Proposta</h1>
-                        <p id="tituloItens" style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;"></p>
-                    </div>
+                    <div><h1>Itens da Proposta</h1><p id="tituloItens" style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;"></p></div>
                 </div>
                 <div style="display: flex; gap: 0.75rem; align-items:center;">
                     <button onclick="adicionarItem()" class="btn-add-item">+ Item</button>
                     <button onclick="abrirModalIntervalo()" class="btn-add-interval">+ Intervalo</button>
                     <button onclick="abrirModalExcluirItens()" class="btn-delete-selected">Excluir</button>
-                    <button onclick="abrirModalCotacao()" class="btn-cotacao" title="Cotação">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                    </button>
-                    <button onclick="syncItens()" class="btn-sync" title="Sincronizar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                    </button>
-                    <button onclick="voltar()" class="btn-back" title="Voltar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    </button>
+                    <button onclick="abrirModalCotacao()" class="btn-cotacao" title="Cotação"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></button>
+                    <button onclick="syncItens()" class="btn-sync" title="Sincronizar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+                    <button onclick="voltar()" class="btn-back" title="Voltar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
                 </div>
             </div>
             <div class="search-bar-wrapper">
@@ -436,9 +404,7 @@ function mostrarTelaItens() {
                     <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
                     <div class="search-bar-filters">
                         <div class="filter-dropdown-inline">
-                            <select id="filterMarcaItens" onchange="filterItens()">
-                                <option value="">Marca</option>
-                            </select>
+                            <select id="filterMarcaItens" onchange="filterItens()"><option value="">Marca</option></select>
                         </div>
                     </div>
                 </div>
@@ -446,21 +412,7 @@ function mostrarTelaItens() {
             <div class="card table-card">
                 <div style="overflow-x: auto;">
                     <table style="min-width: 1200px;">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px; text-align: center;">✓</th>
-                                <th style="width: 60px;">ITEM</th>
-                                <th style="min-width: 300px;">DESCRIÇÃO</th>
-                                <th style="width: 80px;">QTD</th>
-                                <th style="width: 80px;">UND</th>
-                                <th style="width: 120px;">MARCA</th>
-                                <th style="width: 120px;">MODELO</th>
-                                <th style="width: 120px;">CUSTO UNT</th>
-                                <th style="width: 120px;">CUSTO TOTAL</th>
-                                <th style="width: 120px;">VENDA UNT</th>
-                                <th style="width: 120px;">VENDA TOTAL</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th style="width:40px;text-align:center;">✓</th><th>ITEM</th><th>DESCRIÇÃO</th><th>QTD</th><th>UND</th><th>MARCA</th><th>MODELO</th><th>CUSTO UNT</th><th>CUSTO TOTAL</th><th>VENDA UNT</th><th>VENDA TOTAL</th></tr></thead>
                         <tbody id="itensContainer"></tbody>
                     </table>
                 </div>
@@ -477,19 +429,16 @@ function mostrarTelaItens() {
     }
 }
 
-// ========== ITENS CRUD ==========
-// Funções de itens (adicionarItem, editarItem, etc.) mantidas do código original
-// Para completude, incluímos aqui apenas a função de carregar itens (exemplo)
+// Funções de itens (resumidas para manter compatibilidade)
 async function carregarItens(licitacaoId) {
     if (!isOnline) return;
     try {
         const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, {
-            method: 'GET',
-            headers: getHeaders()
+            method: 'GET', headers: getHeaders()
         });
         if (res.status === 401) {
             sessionStorage.removeItem('licitacoesSession');
-            mostrarTelaAcessoNegado('Sessão expirada');
+            mostrarTelaAcessoNegado();
             return;
         }
         if (!res.ok) throw new Error('Erro ao carregar itens');
@@ -524,10 +473,6 @@ function renderItens(lista) {
     `).join('');
 }
 
-// Demais funções de itens (adicionarItem, editarItem, etc.) permanecem iguais
-// ...
-
-// ========== UTILITÁRIOS ==========
 function showToast(msg, tipo = 'success') {
     document.querySelectorAll('.floating-message').forEach(m => m.remove());
     const d = document.createElement('div');
@@ -540,7 +485,17 @@ function showToast(msg, tipo = 'success') {
     }, 3000);
 }
 
-// ========== EXPOSIÇÃO GLOBAL ==========
+// Placeholders para funções de itens que podem ser chamadas
+function adicionarItem() { showToast('Função em desenvolvimento', 'error'); }
+function abrirModalIntervalo() { showToast('Função em desenvolvimento', 'error'); }
+function abrirModalExcluirItens() { showToast('Função em desenvolvimento', 'error'); }
+function abrirModalCotacao() { showToast('Função em desenvolvimento', 'error'); }
+function fecharModalCotacao() { }
+function copiarMensagemCotacao() { showToast('Função em desenvolvimento', 'error'); }
+function syncItens() { carregarItens(currentLicitacaoId); }
+function filterItens() { }
+function gerarMensagemCotacao() { }
+
 window.openFormModal = openFormModal;
 window.closeFormModal = closeFormModal;
 window.salvarLicitacao = salvarLicitacao;
