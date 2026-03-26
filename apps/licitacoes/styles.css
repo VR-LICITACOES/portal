@@ -1,6 +1,8 @@
-/* VARIÁVEIS BASE - IDÊNTICO ÀS OUTRAS APLICAÇÕES */
+/* ============================================
+   VARIÁVEIS BASE (cores e temas)
+   ============================================ */
 :root {
-    --primary: #003366;
+    --primary: #ff521d;
     --bg-primary: #FFFFFF;
     --bg-secondary: #F8F9FA;
     --bg-card: #FFFFFF;
@@ -33,7 +35,7 @@
         --bg-card: #1A1A1A;
         --text-primary: #FFFFFF;
         --text-secondary: #A0A0A0;
-        --border-color: rgba(0, 51, 102, 0.2);
+        --border-color: rgba(255, 82, 29, 0.08);
         --input-bg: #2A2A2A;
         --table-stripe: #1F1F1F;
         --card-shadow: none;
@@ -59,51 +61,8 @@ body {
     overflow-y: scroll;
 }
 
-/* LOADER */
-.loader {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 82, 29, 0.2);
-    border-top-color: #ff521d;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* SPLASH SCREEN */
-.splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--bg-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999;
-    animation: splashFadeOut 0.0s ease 2.5s forwards;
-}
-
-@keyframes splashFadeOut {
-    to { 
-        opacity: 0; 
-        visibility: hidden; 
-    }
-}
-
 .app-content {
-    opacity: 0;
-    animation: contentFadeIn 0.0s ease 2.5s forwards;
-}
-
-@keyframes contentFadeIn {
-    to { opacity: 1; }
+    opacity: 1;
 }
 
 .container {
@@ -146,12 +105,12 @@ h1 {
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
     margin: 0;
 }
 
-/* STATUS DE CONEXÃO */
+/* ============================================
+   STATUS DE CONEXÃO
+   ============================================ */
 .connection-status {
     display: flex;
     align-items: center;
@@ -190,7 +149,9 @@ h1 {
     100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-/* BOTÃO NOVO */
+/* ============================================
+   BOTÕES
+   ============================================ */
 .btn-new-order-header {
     background: var(--btn-register);
     color: white;
@@ -215,34 +176,33 @@ h1 {
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
 
-/* BOTÃO EXCLUIR SELECIONADOS */
-.btn-delete-selected {
+button.success {
+    background: var(--btn-save);
+    color: white;
+}
+button.danger {
     background: var(--btn-delete);
     color: white;
-    border: none;
-    padding: 0.65rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-    white-space: nowrap;
+}
+button.secondary {
+    background: #6B7280;
+    color: white;
+}
+button.small {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.btn-delete-selected:hover {
-    background: #dc2626;
-    transform: translateY(-1px);
-}
-
-/* SEARCH BAR */
+/* ============================================
+   SEARCH BAR E FILTROS
+   ============================================ */
 .search-bar-wrapper {
     margin-bottom: 0.5rem;
 }
-
 .search-bar {
     background: var(--bg-card);
     padding: 0.75rem 1rem;
@@ -254,12 +214,10 @@ h1 {
     gap: 0.75rem;
     flex-wrap: wrap;
 }
-
 .search-icon {
     color: var(--text-secondary);
     flex-shrink: 0;
 }
-
 .search-bar input {
     flex: 1;
     border: none;
@@ -270,28 +228,19 @@ h1 {
     font-family: inherit;
     min-width: 150px;
 }
-
 .search-bar input:focus {
     outline: none;
 }
-
-.search-bar input::placeholder {
-    color: var(--text-secondary);
-}
-
-/* FILTROS INTEGRADOS */
 .search-bar-filters {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
 }
-
 .filter-dropdown-inline {
     position: relative;
     min-width: 160px;
 }
-
 .filter-dropdown-inline select {
     width: 100%;
     padding: 0.5rem 2rem 0.5rem 0.75rem;
@@ -304,19 +253,8 @@ h1 {
     font-family: inherit;
     cursor: pointer;
     appearance: none;
-    transition: all 0.2s ease;
     height: 38px;
 }
-
-.filter-dropdown-inline select:hover {
-    border-color: var(--text-secondary);
-}
-
-.filter-dropdown-inline select:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
 .filter-dropdown-inline .dropdown-icon {
     position: absolute;
     right: 0.75rem;
@@ -325,8 +263,6 @@ h1 {
     pointer-events: none;
     color: var(--text-secondary);
 }
-
-/* NAVEGAÇÃO DE MÊS */
 .month-navigation-inline {
     display: flex;
     align-items: center;
@@ -338,7 +274,6 @@ h1 {
     height: 38px;
     min-width: 160px;
 }
-
 .month-nav-arrow {
     background: transparent;
     border: none;
@@ -349,14 +284,11 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
 }
-
 .month-nav-arrow:hover {
     background: rgba(0, 0, 0, 0.05);
     color: var(--text-primary);
 }
-
 .month-display-inline {
     padding: 0 0.5rem;
     font-size: 0.85rem;
@@ -364,8 +296,6 @@ h1 {
     color: var(--text-primary);
     white-space: nowrap;
 }
-
-/* BOTÕES DE AÇÃO */
 .calendar-btn {
     background: transparent;
     border: none;
@@ -376,16 +306,15 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    margin-left: 0.25rem;
 }
-
 .calendar-btn:hover {
     background: var(--input-bg);
     color: var(--primary);
 }
 
-/* CALENDAR MODAL (Dias do mês) */
+/* ============================================
+   CALENDAR MODAL (dias do mês)
+   ============================================ */
 .calendar-modal {
     display: none;
     position: fixed;
@@ -399,11 +328,9 @@ h1 {
     align-items: center;
     justify-content: center;
 }
-
 .calendar-modal.show {
     display: flex;
 }
-
 .calendar-content {
     background: var(--bg-card);
     border-radius: 16px;
@@ -414,21 +341,17 @@ h1 {
     width: 90%;
     animation: scaleIn 0.2s ease;
 }
-
 .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
-
 .calendar-header h3 {
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin: 0;
 }
-
 .calendar-year-nav {
     background: transparent;
     border: none;
@@ -436,76 +359,63 @@ h1 {
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
 }
-
 .calendar-year-nav:hover {
     background: var(--input-bg);
     color: var(--text-primary);
 }
-
 .calendar-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     margin-bottom: 0.5rem;
 }
-
 .calendar-weekday {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-secondary);
     padding: 0.5rem;
 }
-
 .calendar-days-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 0.25rem;
 }
-
 .calendar-day {
     padding: 0.5rem;
     text-align: center;
     font-size: 0.9rem;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
     background: var(--input-bg);
     color: var(--text-primary);
 }
-
 .calendar-day.empty {
     background: transparent;
     cursor: default;
 }
-
 .calendar-day.has-record {
     background: var(--primary);
     color: white;
 }
-
 .calendar-day.has-record:hover {
     background: #004080;
     transform: scale(1.05);
 }
-
 .calendar-day.today {
     border: 2px solid var(--primary);
     font-weight: bold;
 }
 
-/* DASHBOARD CARDS */
+/* ============================================
+   DASHBOARD CARDS
+   ============================================ */
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
-
 .stat-card {
     background: var(--bg-card);
     padding: 1.25rem;
@@ -518,12 +428,10 @@ h1 {
     transition: all 0.2s ease;
     cursor: pointer;
 }
-
 .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-
 .stat-icon {
     width: 48px;
     height: 48px;
@@ -534,31 +442,13 @@ h1 {
     font-size: 1.5rem;
     flex-shrink: 0;
 }
-
-.stat-icon-default {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3B82F6;
-}
-
-.stat-icon-success {
-    background: rgba(34, 197, 94, 0.1);
-    color: #22C55E;
-}
-
-.stat-icon-warning-light {
-    background: rgba(255, 193, 7, 0.15);
-    color: #ffc107;
-}
-
-.stat-icon-danger {
-    background: rgba(239, 68, 68, 0.1);
-    color: #EF4444;
-}
-
+.stat-icon-default { background: rgba(107, 114, 128, 0.1); }
+.stat-icon-success { background: rgba(34, 197, 94, 0.1); color: #22C55E; }
+.stat-icon-danger { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+.stat-icon-warning-light { background: rgba(255, 193, 7, 0.15); color: #ffc107; }
 .stat-content {
     flex: 1;
 }
-
 .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
@@ -566,45 +456,25 @@ h1 {
     line-height: 1;
     margin-bottom: 0.25rem;
 }
-
-.stat-value-success {
-    color: #22C55E;
-}
-
-.stat-value-warning {
-    color: #ffc107;
-}
-
-.stat-value-info {
-    color: #3B82F6;
-}
-
-.stat-value-danger {
-    color: #EF4444;
-}
-
+.stat-value-success { color: #22C55E; }
+.stat-value-warning { color: #ffc107; }
+.stat-value-info { color: #3B82F6; }
+.stat-value-danger { color: #EF4444; }
 .stat-label {
     font-size: 0.875rem;
     color: var(--text-secondary);
     font-weight: 500;
 }
-
-/* ALERTA PRAZO VENCIDO */
+/* Alerta prazo vencido */
 .stat-card.has-alert {
     position: relative;
     animation: pulseAlert 2s ease-in-out infinite;
     border-color: var(--alert-color) !important;
 }
-
 @keyframes pulseAlert {
-    0%, 100% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-    }
-    50% {
-        box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.2);
-    }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.2); }
 }
-
 .pulse-badge {
     position: absolute;
     top: -8px;
@@ -622,27 +492,22 @@ h1 {
     animation: pulse 2s ease-in-out infinite;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
-
 @keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.1);
-    }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
-/* TABELA PRINCIPAL */
+/* ============================================
+   TABELA PRINCIPAL
+   ============================================ */
 table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
 }
-
 thead {
     background: var(--th-bg);
 }
-
 th {
     padding: 14px 16px;
     text-align: left;
@@ -653,39 +518,45 @@ th {
     letter-spacing: 0.5px;
     border-bottom: 1px solid var(--th-border);
 }
-
 td {
     padding: 14px 16px;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.9rem;
     color: var(--text-primary);
 }
-
 tbody tr {
     background: var(--bg-card);
     transition: background 0.2s ease;
     cursor: pointer;
 }
-
 tbody tr:nth-child(even) {
     background: var(--table-stripe);
 }
-
 tbody tr:hover {
     background: var(--table-hover);
 }
-
-/* CHECKBOX NA TABELA */
-th input[type="checkbox"],
-td input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    margin: 0;
-    vertical-align: middle;
+.actions-cell {
+    white-space: nowrap;
+    min-width: 200px;
+    text-align: center;
 }
-
-/* STATUS BADGES */
+.action-btn {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    margin: 0 4px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+.action-btn.edit {
+    background: var(--btn-edit);
+    color: white;
+}
+.action-btn.delete {
+    background: var(--btn-delete);
+    color: white;
+}
 .status-badge {
     display: inline-block;
     padding: 4px 12px;
@@ -696,47 +567,20 @@ td input[type="checkbox"] {
     letter-spacing: 0.05em;
     white-space: nowrap;
 }
-
 .status-badge.success {
     background: rgba(34, 197, 94, 0.15);
     color: #16a34a;
     border: 1px solid rgba(34, 197, 94, 0.4);
 }
-
 .status-badge.warning {
     background: rgba(255, 193, 7, 0.15);
     color: #e6a000;
     border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
-/* AÇÕES */
-.actions-cell {
-    white-space: nowrap;
-    min-width: 200px;
-    text-align: center;
-}
-
-.action-btn {
-    padding: 8px 12px;
-    font-size: 0.85rem;
-    margin: 0 4px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-}
-
-.action-btn.edit {
-    background: var(--btn-edit);
-    color: white;
-}
-
-.action-btn.delete {
-    background: var(--btn-delete);
-    color: white;
-}
-
-/* MODAL */
+/* ============================================
+   MODAIS GERAIS
+   ============================================ */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -752,23 +596,11 @@ td input[type="checkbox"] {
     opacity: 0;
     animation: fadeIn 0.2s ease forwards;
 }
-
 .modal-overlay.show {
     display: flex;
 }
-
-@keyframes fadeIn {
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes fadeOut {
-    to {
-        opacity: 0;
-    }
-}
-
+@keyframes fadeIn { to { opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; } }
 .modal-content {
     background: var(--bg-card);
     border-radius: 16px;
@@ -782,13 +614,7 @@ td input[type="checkbox"] {
     transform: scale(0.9);
     animation: scaleIn 0.2s ease forwards;
 }
-
-@keyframes scaleIn {
-    to {
-        transform: scale(1);
-    }
-}
-
+@keyframes scaleIn { to { transform: scale(1); } }
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -797,14 +623,12 @@ td input[type="checkbox"] {
     padding-bottom: 1rem;
     border-bottom: 2px solid var(--border-color);
 }
-
 .modal-title {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
 }
-
 .close-modal {
     background: transparent !important;
     border: none !important;
@@ -819,29 +643,22 @@ td input[type="checkbox"] {
     align-items: center;
     justify-content: center;
     transition: color 0.2s ease;
-    box-shadow: none !important;
 }
-
 .close-modal:hover {
     color: var(--text-primary);
     background: transparent !important;
     transform: none !important;
-    box-shadow: none !important;
 }
-
-/* MODAL DELETE */
 .modal-delete {
     position: relative;
     padding: 2.5rem 2rem 2rem 2rem;
     max-width: 500px !important;
 }
-
 .modal-delete .close-modal {
     position: absolute;
     top: 1rem;
     right: 1rem;
 }
-
 .modal-message-delete {
     margin: 2rem 0 2.5rem 0;
     color: var(--text-primary);
@@ -850,7 +667,6 @@ td input[type="checkbox"] {
     text-align: center;
     font-weight: 500;
 }
-
 .modal-actions {
     display: flex;
     gap: 0.75rem;
@@ -859,13 +675,11 @@ td input[type="checkbox"] {
     padding-top: 1.5rem;
     border-top: 2px solid var(--border-color);
 }
-
 .modal-actions-no-border {
     border-top: none !important;
     padding-top: 0 !important;
     justify-content: center !important;
 }
-
 .modal-actions button {
     margin: 0;
     min-width: 120px;
@@ -874,41 +688,20 @@ td input[type="checkbox"] {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.3s ease;
 }
 
-button.success {
-    background: var(--btn-save);
-    color: white;
-}
-
-button.danger {
-    background: var(--btn-delete);
-    color: white;
-}
-
-button.secondary {
-    background: #6B7280;
-    color: white;
-}
-
-button:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-/* FORMULÁRIO */
+/* ============================================
+   FORMULÁRIOS E TABELAS DE ITENS
+   ============================================ */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.2rem;
     margin-bottom: 1.5rem;
 }
-
 .form-group {
     margin-bottom: 1rem;
 }
-
 label {
     display: block;
     margin-bottom: 8px;
@@ -916,7 +709,6 @@ label {
     color: var(--text-primary);
     font-size: 0.9rem;
 }
-
 input, select, textarea {
     width: 100%;
     padding: 12px 16px;
@@ -926,38 +718,24 @@ input, select, textarea {
     color: var(--text-primary);
     font-size: 0.95rem;
     font-family: inherit;
-    transition: all 0.2s ease;
 }
-
 input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--primary);
 }
-
-/* TELA DE ITENS */
+/* Tela de itens */
 #telaItens .header {
     margin-bottom: 1rem;
 }
-
 #telaItens .table-card {
     margin-top: 0.5rem;
 }
-
 .descricao-cell {
     max-width: 300px;
     word-wrap: break-word;
     white-space: normal;
     text-align: left !important;
 }
-
-/* CHECKBOX DE ITENS */
-.item-checkbox {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-/* TOTAIS BAR */
 #itensTotaisBar {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -969,13 +747,95 @@ input:focus, select:focus, textarea:focus {
     padding: 1rem;
     font-size: 10pt;
 }
-
-/* CONTEXT MENU */
-#contextMenu {
-    font-family: 'Inter', sans-serif;
+/* Checkbox customizado (para enviar proposta) */
+.checkbox-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.styled-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+}
+.checkbox-label-styled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--input-bg);
+}
+.checkbox-label-styled:hover {
+    border-color: var(--primary);
+    background: rgba(255, 82, 29, 0.05);
+}
+.styled-checkbox:checked + .checkbox-label-styled {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+.styled-checkbox:checked + .checkbox-label-styled::after {
+    content: '✓';
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
 }
 
-/* FLOATING MESSAGES */
+/* ============================================
+   SISTEMA DE ABAS (modal itens)
+   ============================================ */
+.tabs-container {
+    margin-bottom: 1.5rem;
+}
+.tabs-nav {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 12px 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+.tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 82, 29, 0.05);
+}
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: transparent;
+}
+.tab-content {
+    display: none;
+    animation: fadeInTab 0.3s ease;
+}
+.tab-content.active {
+    display: block;
+}
+@keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   FLOATING MESSAGES
+   ============================================ */
 .floating-message {
     position: fixed;
     bottom: 24px;
@@ -990,38 +850,27 @@ input:focus, select:focus, textarea:focus {
     animation: slideInBottom 0.3s ease;
     min-width: 300px;
 }
-
 .floating-message.success {
     background: #10B981;
     color: #FFFFFF;
     border-color: #059669;
 }
-
 .floating-message.error {
     background: #EF4444;
     color: #FFFFFF;
     border-color: #DC2626;
 }
-
 @keyframes slideInBottom {
-    from {
-        opacity: 0;
-        transform: translateY(100px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(100px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideOutBottom {
-    to {
-        opacity: 0;
-        transform: translateY(100px);
-    }
+    to { opacity: 0; transform: translateY(100px); }
 }
 
-/* PAGINAÇÃO DO MODAL VENCIDOS */
+/* ============================================
+   PAGINAÇÃO (modal vencidos)
+   ============================================ */
 #vencidosPaginacao .paginacao-btns {
     display: flex;
     align-items: center;
@@ -1029,7 +878,6 @@ input:focus, select:focus, textarea:focus {
     flex-wrap: wrap;
     justify-content: center;
 }
-
 .pag-btn {
     background: var(--input-bg);
     color: var(--text-primary);
@@ -1040,112 +888,55 @@ input:focus, select:focus, textarea:focus {
     font-weight: 500;
     cursor: pointer;
     min-width: 36px;
-    transition: all 0.15s ease;
-    margin: 0;
 }
-
-.pag-btn:hover:not(:disabled) {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: rgba(0, 51, 102, 0.05);
-    transform: none;
-    opacity: 1;
-}
-
 .pag-btn-active {
     background: var(--primary) !important;
     color: #fff !important;
     border-color: var(--primary) !important;
 }
-
 .pag-btn:disabled {
     opacity: 0.35;
     cursor: not-allowed;
-    background: var(--input-bg);
 }
 
-/* RESPONSIVO */
+/* ============================================
+   RESPONSIVO
+   ============================================ */
 @media (max-width: 768px) {
     .container {
         padding: 0 1rem 5rem 1rem;
         margin: 1rem auto;
     }
-    
     .header {
         flex-direction: column;
         align-items: stretch;
     }
-    
     .header-left {
         width: 100%;
         justify-content: space-between;
     }
-    
-    .btn-new-order-header,
-    .btn-delete-selected {
+    .btn-new-order-header {
         width: 100%;
         justify-content: center;
     }
-    
-    h1 {
-        font-size: 1.5rem;
-    }
-    
+    h1 { font-size: 1.5rem; }
     .search-bar {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.5rem;
     }
-    
-    .search-bar input {
-        width: 100%;
-        min-width: unset;
-    }
-    
     .search-bar-filters {
         width: 100%;
         flex-direction: column;
     }
-    
-    .filter-dropdown-inline {
+    .filter-dropdown-inline, .month-navigation-inline {
         width: 100%;
     }
-    
-    .month-navigation-inline {
-        width: 100%;
-        justify-content: space-between;
-    }
-    
     .dashboard-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
-    table {
-        font-size: 0.85rem;
-    }
-    
-    th, td {
-        padding: 10px 8px;
-    }
-    
-    .actions-cell {
-        min-width: auto;
-    }
-    
-    .modal-actions {
-        flex-direction: column-reverse;
-    }
-    
-    .modal-actions button {
-        width: 100%;
-    }
-    
-    .calendar-days-grid {
-        gap: 0.15rem;
-    }
-    
-    .calendar-day {
-        padding: 0.35rem;
-        font-size: 0.8rem;
-    }
+    table { font-size: 0.85rem; }
+    th, td { padding: 10px 8px; }
+    .actions-cell { min-width: auto; }
+    .modal-actions { flex-direction: column-reverse; }
+    .modal-actions button { width: 100%; }
 }
