@@ -445,6 +445,7 @@ function voltar() {
     itens = [];
 }
 
+// ========== TELA DE ITENS (CORRIGIDA) ==========
 function mostrarTelaItens() {
     document.querySelector('.container').style.display = 'none';
     let tela = document.getElementById('telaItens');
@@ -470,7 +471,7 @@ function mostrarTelaItens() {
             <div></div> <!-- espaço vazio para manter a estrutura -->
         </div>
 
-        <!-- SEARCH BAR COM ÍCONES À DIREITA (igual à principal) -->
+        <!-- SEARCH BAR COM ÍCONES À DIREITA -->
         <div class="search-bar-wrapper">
             <div class="search-bar">
                 <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -479,7 +480,7 @@ function mostrarTelaItens() {
                 </svg>
                 <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
                 
-                <!-- Ícones à direita (exatamente como os botões da principal) -->
+                <!-- Ícones à direita -->
                 <div class="search-bar-filters" style="margin-left: auto;">
                     <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -526,22 +527,42 @@ function mostrarTelaItens() {
                             <th>CUSTO TOTAL</th>
                             <th>VENDA UNT</th>
                             <th>VENDA TOTAL</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itensContainer"></tbody>
-                </table>
+                        </thead>
+                        <tbody id="itensContainer"></tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <!-- TOTAIS (barra igual à principal) -->
+        <!-- TOTAIS (sem borda e sem MARGEM) -->
         <div class="totals-bar">
             <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
             <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
-            <span><strong>MARGEM:</strong> <span id="totalMargem">0%</span></span>
         </div>
     `;
 
     tela.style.display = 'block';
+}
+
+// ========== ATUALIZAR TOTAIS (apenas custo e venda) ==========
+function atualizarTotais() {
+    const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
+    const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
+    
+    const totalCustoSpan = document.getElementById('totalCusto');
+    const totalVendaSpan = document.getElementById('totalVenda');
+    if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
+    if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
+}
+
+// ========== FUNÇÃO SYNC ITENS (garantir que funciona) ==========
+function syncItens() {
+    if (currentLicitacaoId) {
+        console.log('Sincronizando itens da proposta', currentLicitacaoId);
+        carregarItens(currentLicitacaoId);
+        showToast('Itens sincronizados', 'success');
+    } else {
+        showToast('Nenhuma proposta selecionada', 'error');
+    }
 }
 
 // ========== CRUD DE ITENS ==========
