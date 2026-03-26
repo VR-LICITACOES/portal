@@ -9,14 +9,12 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Splash Screen -->
     <div class="splash-screen" id="splashScreen">
         <div class="loader"></div>
     </div>
 
     <div class="app-content">
         <div class="container">
-            <!-- HEADER -->
             <div class="header">
                 <div class="header-left">
                     <h1>Licitações</h1>
@@ -24,9 +22,9 @@
                         <span class="status-dot"></span>
                     </div>
                 </div>
+                <!-- Botão azul removido -->
             </div>
 
-            <!-- DASHBOARD CARDS -->
             <div class="dashboard-grid">
                 <div class="stat-card">
                     <div class="stat-icon stat-icon-default">
@@ -51,7 +49,7 @@
                         <div class="stat-label">Enviadas</div>
                     </div>
                 </div>
-                <div class="stat-card" id="abertasCard">
+                <div class="stat-card">
                     <div class="stat-icon stat-icon-warning-light">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -79,7 +77,6 @@
                 </div>
             </div>
 
-            <!-- SEARCH BAR COM FILTROS -->
             <div class="search-bar-wrapper">
                 <div class="search-bar">
                     <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -124,7 +121,6 @@
                         </button>
                     </div>
 
-                    <!-- Botão Nova Proposta (monocromático) -->
                     <button onclick="openFormModal()" class="btn-new-proposal-icon" title="Nova Proposta">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -141,7 +137,6 @@
                 </div>
             </div>
 
-            <!-- CALENDAR MODAL (dias com registros) -->
             <div class="calendar-modal" id="calendarModal">
                 <div class="calendar-content">
                     <div class="calendar-header">
@@ -157,13 +152,10 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="calendar-days-list" id="calendarDaysList">
-                        <!-- Lista de dias com registros será inserida aqui -->
-                    </div>
+                    <div class="calendar-days-list" id="calendarDaysList"></div>
                 </div>
             </div>
 
-            <!-- MODAL PRAZO VENCIDO (com paginação) -->
             <div class="modal-overlay" id="modalVencidos">
                 <div class="modal-content" style="max-width: 700px;">
                     <div class="modal-header">
@@ -173,11 +165,7 @@
                     <div style="overflow-x: auto;">
                         <table style="width:100%;">
                             <thead>
-                                <tr>
-                                    <th>Nº Proposta</th>
-                                    <th>Data</th>
-                                    <th>Hora</th>
-                                </tr>
+                                <tr><th>Nº Proposta</th><th>Data</th><th>Hora</th></tr>
                             </thead>
                             <tbody id="vencidosTableBody"></tbody>
                         </table>
@@ -189,14 +177,12 @@
                 </div>
             </div>
 
-            <!-- MODAL NOVA PROPOSTA / EDIÇÃO -->
             <div class="modal-overlay" id="formModal">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3 class="modal-title" id="formTitle">Nova Proposta</h3>
                         <button class="close-modal" onclick="closeFormModal(true)">✕</button>
                     </div>
-                    
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Nº Proposta *</label>
@@ -226,7 +212,6 @@
                             </select>
                         </div>
                     </div>
-
                     <div class="modal-actions">
                         <button type="button" onclick="salvarLicitacao()" class="success">Salvar</button>
                         <button type="button" onclick="closeFormModal(true)" class="danger">Cancelar</button>
@@ -234,7 +219,6 @@
                 </div>
             </div>
 
-            <!-- MODAL EXCLUIR -->
             <div class="modal-overlay" id="deleteModal">
                 <div class="modal-content modal-delete">
                     <button class="close-modal" onclick="closeDeleteModal()">✕</button>
@@ -246,7 +230,6 @@
                 </div>
             </div>
 
-            <!-- MODAL COTAÇÃO -->
             <div class="modal-overlay" id="modalCotacao">
                 <div class="modal-content" style="max-width: 500px;">
                     <div class="modal-header">
@@ -279,19 +262,11 @@
                 </div>
             </div>
 
-            <!-- TABELA PRINCIPAL -->
             <div class="card table-card">
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Nº Proposta</th>
-                                <th>Data</th>
-                                <th>Hora</th>
-                                <th>UF</th>
-                                <th>Status</th>
-                                <th style="text-align: center;">Ações</th>
-                            </tr>
+                            <tr><th>Nº Proposta</th><th>Data</th><th>Hora</th><th>UF</th><th>Status</th><th style="text-align: center;">Ações</th></tr>
                         </thead>
                         <tbody id="licitacoesContainer"></tbody>
                     </table>
@@ -300,7 +275,6 @@
         </div>
     </div>
 
-    <!-- TELA DE ITENS (será inserida dinamicamente) -->
     <div id="telaItens" style="display:none;"></div>
 
     <script>
