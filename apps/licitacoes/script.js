@@ -396,8 +396,6 @@ function syncData() {
 }
 
 // ========== TELA DE ITENS ==========
-// A tela de itens é renderizada dentro de #telaItens com seus próprios modais,
-// garantindo que não haja conflito com os modais da tela principal.
 function viewLicitacao(id) {
     currentLicitacaoId = id;
     mostrarTelaItens();
@@ -633,7 +631,7 @@ function renderItens() {
     }
     tbody.innerHTML = filtered.map((item, idx) => `
         <tr onclick="abrirEdicaoItem('${item.id}')" style="cursor:pointer;">
-            <td>${item.numero_item || item.numero || idx+1}</td>
+            <td>${item.numero || idx+1}</td>
             <td class="descricao-cell">${item.descricao || ''}</td>
             <td>${item.quantidade || 0}</td>
             <td>${item.unidade || ''}</td>
@@ -664,7 +662,7 @@ function adicionarItem() {
     editingItemId = null;
     document.getElementById('itemModalTitle').textContent = 'Adicionar Item';
     const proximoNum = itens.length > 0
-        ? Math.max(...itens.map(i => i.numero_item || i.numero || 0)) + 1
+        ? Math.max(...itens.map(i => i.numero || 0)) + 1
         : 1;
     document.getElementById('itemNumero').value = proximoNum;
     document.getElementById('itemDescricao').value = '';
@@ -686,7 +684,7 @@ function abrirEdicaoItem(itemId) {
     if (!item) return;
     editingItemId = item.id;
     document.getElementById('itemModalTitle').textContent = 'Editar Item';
-    document.getElementById('itemNumero').value = item.numero_item || item.numero || '';
+    document.getElementById('itemNumero').value = item.numero || '';
     document.getElementById('itemDescricao').value = item.descricao || '';
     document.getElementById('itemQuantidade').value = item.quantidade || '';
     document.getElementById('itemUnidade').value = item.unidade || 'UN';
@@ -724,7 +722,7 @@ function recalcularItemTotais() {
 
 async function salvarItem() {
     const itemData = {
-        numero_item: parseInt(document.getElementById('itemNumero').value),
+        numero: parseInt(document.getElementById('itemNumero').value),  // ✅ era numero_item
         descricao: document.getElementById('itemDescricao').value.trim(),
         quantidade: parseFloat(document.getElementById('itemQuantidade').value),
         unidade: document.getElementById('itemUnidade').value.trim(),
@@ -828,7 +826,6 @@ function abrirModalCotacao() {
         showToast('Nenhum item cadastrado nesta proposta', 'error');
         return;
     }
-    // Coleta marcas únicas dos itens
     const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))].sort();
     if (!marcas.length) {
         showToast('Nenhum item possui marca cadastrada', 'error');
@@ -839,7 +836,6 @@ function abrirModalCotacao() {
     select.innerHTML = '<option value="">Selecione a marca...</option>' +
         marcas.map(m => `<option value="${m}">${m}</option>`).join('');
 
-    // Reset para tipo descrição
     const radioDesc = document.querySelector('input[name="cotacaoTipo"][value="descricao"]');
     if (radioDesc) radioDesc.checked = true;
 
@@ -862,7 +858,6 @@ async function enviarCotacao() {
     }
     const tipo = document.querySelector('input[name="cotacaoTipo"]:checked')?.value || 'descricao';
 
-    // Filtra itens da marca selecionada para gerar mensagem específica
     const itensDaMarca = itens.filter(i => (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase());
     const linhas = itensDaMarca
         .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
@@ -895,7 +890,6 @@ async function enviarCotacao() {
         const resultado = await res.json();
         const lista = Array.isArray(resultado) ? resultado : (resultado.data || []);
 
-        // Correspondência exata pelo nome (case-insensitive)
         const fornecedor = lista.find(f =>
             f.nome.trim().toLowerCase() === marcaSelecionada.trim().toLowerCase()
         );
