@@ -75,11 +75,16 @@ function selectDay(day) {
     const selectedDate = new Date(calendarYear, calendarMonth, day);
     const dateStr = selectedDate.toISOString().split('T')[0];
     
+    // Aplica o filtro de data sem alterar a barra de pesquisa
+    currentDateFilter = dateStr;
+    
+    // Atualiza o mês exibido para o mês da data selecionada
     currentMonth = new Date(calendarYear, calendarMonth, 1);
     updateMonthDisplay();
+    
+    // Recarrega as propostas do mês (já filtradas pelo servidor)
     loadLicitacoes().then(() => {
-        const search = document.getElementById('search');
-        if (search) search.value = dateStr;
+        // Aplica o filtro de data na lista já carregada
         filterLicitacoes();
     });
     
