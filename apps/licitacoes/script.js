@@ -193,7 +193,6 @@ function filterLicitacoes() {
     renderLicitacoes(filtered);
 }
 
-// Função auxiliar para formatar data de YYYY-MM-DD para DD/MM/YYYY
 function formatDateToBR(dateStr) {
     if (!dateStr) return '-';
     const [year, month, day] = dateStr.split('-');
@@ -204,20 +203,14 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '.<td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => `
         <tr>
             <td style="text-align:center;" onclick="event.stopPropagation()">
                 <div class="checkbox-wrapper">
-                    <input 
-                        type="checkbox" 
-                        id="check-${l.id}" 
-                        class="styled-checkbox"
-                        ${l.status === 'ENVIADA' ? 'checked' : ''}
-                        onchange="toggleStatus('${l.id}')"
-                    >
+                    <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${l.status === 'ENVIADA' ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
                     <label for="check-${l.id}" class="checkbox-label-styled"></label>
                 </div>
             </td>
@@ -236,26 +229,22 @@ function renderLicitacoes(lista) {
     `).join('');
 }
 
-// ========== ALTERNAR STATUS (checkbox na tabela principal) ==========
 async function toggleStatus(id) {
     const proposta = licitacoes.find(l => l.id === id);
     if (!proposta) return;
     const novoStatus = proposta.status === 'ENVIADA' ? 'ABERTA' : 'ENVIADA';
     if (!isOnline) {
         showToast('Sistema offline', 'error');
-        // Reverte o checkbox visualmente
         const checkbox = document.getElementById(`check-${id}`);
         if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
         return;
     }
     try {
-        // Tenta o endpoint específico de status (PATCH)
         let res = await fetch(`${API_URL}/licitacoes/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', ...getHeaders() },
             body: JSON.stringify({ status: novoStatus })
         });
-        // Se não existir (404), tenta atualizar a proposta inteira via PUT
         if (res.status === 404) {
             const propostaAtualizada = { ...proposta, status: novoStatus };
             res = await fetch(`${API_URL}/licitacoes/${id}`, {
@@ -277,7 +266,6 @@ async function toggleStatus(id) {
         showToast(`Proposta ${novoStatus === 'ENVIADA' ? 'enviada' : 'reaberta'} com sucesso!`, 'success');
     } catch (err) {
         showToast(err.message, 'error');
-        // Reverte checkbox
         const checkbox = document.getElementById(`check-${id}`);
         if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
     }
@@ -400,7 +388,7 @@ function renderVencidosModal(vencidas) {
     if (!tbody) return;
     
     if (pageData.length === 0) {
-        tbody.innerHTML = '.<td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
@@ -445,7 +433,6 @@ function verificarPrazosVencidos() {
 
 // ========== TELA DE ITENS ==========
 function viewLicitacao(id) {
-    console.log('Abrindo tela de itens para a proposta', id);
     currentLicitacaoId = id;
     mostrarTelaItens();
     carregarItens(id);
@@ -461,23 +448,27 @@ function voltar() {
 function mostrarTelaItens() {
     document.querySelector('.container').style.display = 'none';
     let tela = document.getElementById('telaItens');
-    
     if (!tela) {
         tela = document.createElement('div');
         tela.id = 'telaItens';
         tela.className = 'container';
         document.body.querySelector('.app-content').appendChild(tela);
     }
-    
+
+    // Obtém a proposta atual
+    const proposta = licitacoes.find(l => l.id === currentLicitacaoId);
+    const tituloProposta = proposta ? `Proposta Nº ${proposta.numero_proposta}` : '';
+
     tela.innerHTML = `
+        <!-- HEADER IDÊNTICO AO PRINCIPAL -->
         <div class="header">
             <div class="header-left">
                 <div>
                     <h1>Itens da Proposta</h1>
-                    <p id="tituloItens" style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;"></p>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 2px;">${tituloProposta}</p>
                 </div>
             </div>
-            <div style="display: flex; gap: 0.75rem; align-items:center;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
                 <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -505,6 +496,8 @@ function mostrarTelaItens() {
                 </button>
             </div>
         </div>
+
+        <!-- SEARCH BAR (igual à principal) -->
         <div class="search-bar-wrapper">
             <div class="search-bar">
                 <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -514,6 +507,8 @@ function mostrarTelaItens() {
                 <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
             </div>
         </div>
+
+        <!-- TABELA DE ITENS (mesmo estilo da principal) -->
         <div class="card table-card">
             <div style="overflow-x: auto;">
                 <table style="min-width: 1000px;">
@@ -535,14 +530,16 @@ function mostrarTelaItens() {
                 </table>
             </div>
         </div>
-        <div id="itensTotaisBar" style="display: flex; gap: 2rem; padding: 1rem; font-size: 10pt; border-top: 1px solid var(--border-color);">
+
+        <!-- TOTAIS (barra sem emojis) -->
+        <div class="totals-bar">
             <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
             <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
             <span><strong>MARGEM:</strong> <span id="totalMargem">0%</span></span>
         </div>
     `;
-    
-    // Adiciona checkbox de "Proposta Enviada" ao lado dos botões
+
+    // Adiciona o checkbox de "Proposta Enviada" ao lado dos botões
     const headerRight = tela.querySelector('.header > div:last-child');
     if (headerRight && !headerRight.querySelector('.checkbox-wrapper')) {
         const checkboxDiv = document.createElement('div');
@@ -555,12 +552,10 @@ function mostrarTelaItens() {
         `;
         headerRight.appendChild(checkboxDiv);
     }
-    
+
     tela.style.display = 'block';
     const lic = licitacoes.find(l => l.id === currentLicitacaoId);
     if (lic) {
-        const titulo = document.getElementById('tituloItens');
-        if (titulo) titulo.textContent = `Proposta Nº ${lic.numero_proposta}`;
         const checkbox = document.getElementById('check-enviada');
         if (checkbox) checkbox.checked = (lic.status === 'ENVIADA');
     }
@@ -626,7 +621,7 @@ async function carregarItens(licitacaoId) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -638,7 +633,7 @@ function renderItens() {
         return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
