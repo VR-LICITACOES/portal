@@ -1,5 +1,5 @@
 /* ============================================
-   VARIÁVEIS BASE (iguais ao Ordem de Compra)
+   VARIÁVEIS BASE
    ============================================ */
 :root {
     --primary: #ff521d;
@@ -171,7 +171,7 @@ button.secondary { background: #6B7280; color: white; }
 button.small { padding: 8px 12px; font-size: 0.85rem; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* SEARCH BAR E FILTROS (mantido igual) */
+/* SEARCH BAR E FILTROS */
 .search-bar-wrapper { margin-bottom: 0.5rem; }
 .search-bar {
     background: var(--bg-card);
