@@ -171,6 +171,24 @@ button.secondary { background: #6B7280; color: white; }
 button.small { padding: 8px 12px; font-size: 0.85rem; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ÍCONES (botões transparentes) */
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.btn-icon:hover {
+    background: var(--input-bg);
+    color: var(--primary);
+}
+
 /* SEARCH BAR E FILTROS */
 .search-bar-wrapper { margin-bottom: 0.5rem; }
 .search-bar {
@@ -655,9 +673,7 @@ input:focus, select:focus, textarea:focus {
 }
 #itensTotaisBar {
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-top: none;
-    border-radius: 0 0 12px 12px;
+    border-top: 1px solid var(--border-color);
     margin-bottom: 1.5rem;
     display: flex;
     gap: 2rem;
@@ -668,6 +684,7 @@ input:focus, select:focus, textarea:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
 }
 .styled-checkbox {
     position: absolute;
