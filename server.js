@@ -243,13 +243,15 @@ app.delete('/api/licitacoes/:id', authenticate, async (req, res) => {
 app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
+
         const { data, error } = await supabase
             .from('itens')
             .select('*')
             .eq('licitacao_id', id)
-            .order('numero_item', { ascending: true }); // ✅ CORRIGIDO: era .order('numero')
+            .order('numero', { ascending: true });
+
         if (error) throw error;
-        res.json(data);
+        res.json(data || []);
     } catch (err) {
         console.error('[ITENS] Erro ao listar:', err);
         res.status(500).json({ error: err.message });
