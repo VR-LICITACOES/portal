@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(verificarPrazosVencidos, 60000);
 });
 
-// ========== AUTENTICAÇÃO ==========
+// ========== AUTENTICAÇÃO (igual ao Ordem de Compra) ==========
 function verificarAutenticacao() {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('sessionToken');
@@ -332,7 +332,7 @@ function renderVencidosModal(vencidas) {
     if (!tbody) return;
     
     if (pageData.length === 0) {
-        tbody.innerHTML = '.<td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>';
     } else {
         tbody.innerHTML = pageData.map(l => `
             <tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
@@ -432,7 +432,7 @@ function mostrarTelaItens() {
                 <div style="overflow-x: auto;">
                     <table style="min-width: 1200px;">
                         <thead>
-                            <tr>
+                             <tr>
                                 <th style="width: 60px;">ITEM</th>
                                 <th style="min-width: 300px;">DESCRIÇÃO</th>
                                 <th style="width: 80px;">QTD</th>
@@ -443,7 +443,7 @@ function mostrarTelaItens() {
                                 <th style="width: 120px;">CUSTO TOTAL</th>
                                 <th style="width: 120px;">VENDA UNT</th>
                                 <th style="width: 120px;">VENDA TOTAL</th>
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody id="itensContainer"></tbody>
                     </table>
@@ -487,7 +487,6 @@ async function toggleEnviarProposta() {
         const index = licitacoes.findIndex(l => l.id === updated.id);
         if (index !== -1) licitacoes[index] = updated;
         updateDisplay();
-        // Atualizar checkbox na tela de itens
         const checkbox = document.getElementById('check-enviada');
         if (checkbox) checkbox.checked = (novoStatus === 'ENVIADA');
         showToast(`Proposta ${novoStatus === 'ENVIADA' ? 'enviada' : 'reaberta'} com sucesso!`, 'success');
@@ -526,7 +525,7 @@ function renderItens() {
         return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
