@@ -478,4 +478,336 @@ function mostrarTelaItens() {
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                 </svg>
-                <input type="text" id="search
+                <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
+                
+                <!-- Ícones à direita (igual aos botões da principal) -->
+                <div class="search-bar-filters" style="margin-left: auto;">
+                    <button onclick="adicionarItem()" class="btn-icon" title="Adicionar item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button onclick="abrirModalCotacao()" class="btn-icon" title="Email">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                        </svg>
+                    </button>
+                    <button onclick="syncItens()" class="btn-icon" title="Sincronizar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                    <button onclick="voltar()" class="btn-icon" title="Voltar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABELA DE ITENS -->
+        <div class="card table-card">
+            <div style="overflow-x: auto;">
+                <table style="min-width: 1000px;">
+                    <thead>
+                        <tr>
+                            <th>ITEM</th>
+                            <th style="min-width: 250px;">DESCRIÇÃO</th>
+                            <th>QTD</th>
+                            <th>UND</th>
+                            <th>MARCA</th>
+                            <th>MODELO</th>
+                            <th>CUSTO UNT</th>
+                            <th>CUSTO TOTAL</th>
+                            <th>VENDA UNT</th>
+                            <th>VENDA TOTAL</th>
+                        </thead>
+                        <tbody id="itensContainer"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        <!-- TOTAIS (barra igual à principal) -->
+        <div class="totals-bar">
+            <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
+            <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
+            <span><strong>MARGEM:</strong> <span id="totalMargem">0%</span></span>
+        </div>
+    `;
+
+    tela.style.display = 'block';
+}
+
+async function toggleEnviarProposta() {
+    // Esta função foi removida da tela de itens, pois não há checkbox
+    // Mantida apenas para compatibilidade
+}
+
+async function carregarItens(licitacaoId) {
+    if (!isOnline) return;
+    try {
+        const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, {
+            headers: getHeaders()
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado('Sessão expirada');
+            return;
+        }
+        if (!res.ok) throw new Error('Erro ao carregar itens');
+        itens = await res.json();
+        renderItens();
+        atualizarTotais();
+    } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar itens', 'error');
+        const tbody = document.getElementById('itensContainer');
+        if (tbody) tbody.innerHTML = '.<td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
+    }
+}
+
+function renderItens() {
+    const tbody = document.getElementById('itensContainer');
+    if (!tbody) return;
+    const search = document.getElementById('searchItens')?.value.toLowerCase() || '';
+    const filtered = itens.filter(item => {
+        return item.descricao.toLowerCase().includes(search) || (item.modelo && item.modelo.toLowerCase().includes(search));
+    });
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum item cadastrado</td></tr>';
+        return;
+    }
+    tbody.innerHTML = filtered.map((item, idx) => `
+        <tr onclick="abrirEdicaoItem(${item.id || idx})" style="cursor:pointer;">
+            <td>${item.numero_item || idx+1}</td>
+            <td class="descricao-cell">${item.descricao || ''}</td>
+            <td>${item.quantidade || 0}</td>
+            <td>${item.unidade || ''}</td>
+            <td>${item.marca || ''}</td>
+            <td>${item.modelo || ''}</td>
+            <td>${formatMoney(item.custo_unitario)}</td>
+            <td>${formatMoney(item.custo_total)}</td>
+            <td>${formatMoney(item.venda_unitario)}</td>
+            <td>${formatMoney(item.venda_total)}</td>
+        </tr>
+    `).join('');
+}
+
+function atualizarTotais() {
+    const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
+    const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
+    const margem = totalCusto ? ((totalVenda - totalCusto) / totalCusto * 100).toFixed(2) : 0;
+    
+    const totalCustoSpan = document.getElementById('totalCusto');
+    const totalVendaSpan = document.getElementById('totalVenda');
+    const totalMargemSpan = document.getElementById('totalMargem');
+    if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
+    if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
+    if (totalMargemSpan) totalMargemSpan.textContent = `${margem}%`;
+}
+
+function formatMoney(value) {
+    if (value === undefined || value === null) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+function adicionarItem() {
+    editingItemId = null;
+    document.getElementById('itemModalTitle').textContent = 'Adicionar Item';
+    document.getElementById('itemNumero').value = itens.length + 1;
+    document.getElementById('itemDescricao').value = '';
+    document.getElementById('itemQuantidade').value = '';
+    document.getElementById('itemUnidade').value = 'UN';
+    document.getElementById('itemMarca').value = '';
+    document.getElementById('itemModelo').value = '';
+    document.getElementById('itemPrazoEntrega').value = '';
+    document.getElementById('itemFrete').value = '';
+    document.getElementById('itemCustoUnitario').value = '';
+    document.getElementById('itemVendaUnitario').value = '';
+    recalcularItemTotais();
+    document.getElementById('itemModal').classList.add('show');
+}
+
+function abrirEdicaoItem(index) {
+    const item = itens[index];
+    if (!item) return;
+    editingItemId = item.id || index;
+    document.getElementById('itemModalTitle').textContent = 'Editar Item';
+    document.getElementById('itemNumero').value = item.numero_item;
+    document.getElementById('itemDescricao').value = item.descricao;
+    document.getElementById('itemQuantidade').value = item.quantidade;
+    document.getElementById('itemUnidade').value = item.unidade || 'UN';
+    document.getElementById('itemMarca').value = item.marca || '';
+    document.getElementById('itemModelo').value = item.modelo || '';
+    document.getElementById('itemPrazoEntrega').value = item.prazo_entrega || '';
+    document.getElementById('itemFrete').value = item.frete || '';
+    document.getElementById('itemCustoUnitario').value = item.custo_unitario || '';
+    document.getElementById('itemVendaUnitario').value = item.venda_unitario || '';
+    recalcularItemTotais();
+    document.getElementById('itemModal').classList.add('show');
+}
+
+function fecharItemModal() {
+    document.getElementById('itemModal').classList.remove('show');
+    editingItemId = null;
+}
+
+function recalcularItemTotais() {
+    const qtd = parseFloat(document.getElementById('itemQuantidade').value) || 0;
+    const custoUnit = parseFloat(document.getElementById('itemCustoUnitario').value) || 0;
+    const vendaUnit = parseFloat(document.getElementById('itemVendaUnitario').value) || 0;
+    const custoTotal = qtd * custoUnit;
+    const vendaTotal = qtd * vendaUnit;
+    const lucroBruto = vendaTotal - custoTotal;
+    document.getElementById('itemCustoTotal').value = formatMoney(custoTotal);
+    document.getElementById('itemVendaTotal').value = formatMoney(vendaTotal);
+    document.getElementById('itemLucroBruto').value = formatMoney(lucroBruto);
+}
+
+async function salvarItem() {
+    const itemData = {
+        numero_item: parseInt(document.getElementById('itemNumero').value),
+        descricao: document.getElementById('itemDescricao').value.trim(),
+        quantidade: parseFloat(document.getElementById('itemQuantidade').value),
+        unidade: document.getElementById('itemUnidade').value.trim(),
+        marca: document.getElementById('itemMarca').value.trim(),
+        modelo: document.getElementById('itemModelo').value.trim(),
+        custo_unitario: parseFloat(document.getElementById('itemCustoUnitario').value) || 0,
+        venda_unitario: parseFloat(document.getElementById('itemVendaUnitario').value) || 0,
+        prazo_entrega: document.getElementById('itemPrazoEntrega').value.trim(),
+        frete: parseFloat(document.getElementById('itemFrete').value) || 0
+    };
+    if (!itemData.descricao || isNaN(itemData.quantidade) || itemData.quantidade <= 0) {
+        showToast('Descrição e quantidade são obrigatórios', 'error');
+        return;
+    }
+    itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
+    itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
+    itemData.lucro_bruto = itemData.venda_total - itemData.custo_total;
+    
+    if (!isOnline) {
+        showToast('Sistema offline', 'error');
+        return;
+    }
+    try {
+        let url, method;
+        if (editingItemId !== null && typeof editingItemId === 'number' && itens[editingItemId] && itens[editingItemId].id) {
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${itens[editingItemId].id}`;
+            method = 'PUT';
+        } else {
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens`;
+            method = 'POST';
+        }
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', ...getHeaders() },
+            body: JSON.stringify(itemData)
+        });
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado('Sessão expirada');
+            return;
+        }
+        if (!res.ok) throw new Error('Erro ao salvar item');
+        const saved = await res.json();
+        if (method === 'POST') {
+            itens.push(saved);
+        } else {
+            const index = itens.findIndex(i => i.id === saved.id);
+            if (index !== -1) itens[index] = saved;
+        }
+        fecharItemModal();
+        renderItens();
+        atualizarTotais();
+        showToast('Item salvo com sucesso', 'success');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+function filterItens() {
+    renderItens();
+}
+
+function syncItens() {
+    if (currentLicitacaoId) carregarItens(currentLicitacaoId);
+}
+
+function abrirModalCotacao() {
+    showToast('Funcionalidade em desenvolvimento', 'error');
+}
+
+function fecharModalCotacao() {
+    document.getElementById('modalCotacao').classList.remove('show');
+}
+
+function copiarMensagemCotacao() {
+    const msg = document.getElementById('cotacaoMensagem').value;
+    navigator.clipboard.writeText(msg);
+    showToast('Mensagem copiada!', 'success');
+}
+
+function gerarMensagemCotacao() {
+    // Placeholder
+}
+
+function switchItemTab(tabId) {
+    document.querySelectorAll('#itemModal .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('#itemModal .tab-content').forEach(content => content.classList.remove('active'));
+    const activeBtn = document.querySelector(`#itemModal .tab-btn[onclick*="${tabId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+// ========== UTILITÁRIOS ==========
+function showToast(msg, tipo = 'success') {
+    document.querySelectorAll('.floating-message').forEach(m => m.remove());
+    const d = document.createElement('div');
+    d.className = `floating-message ${tipo}`;
+    d.textContent = msg;
+    document.body.appendChild(d);
+    setTimeout(() => {
+        d.style.animation = 'slideOutBottom 0.3s ease forwards';
+        setTimeout(() => d.remove(), 300);
+    }, 3000);
+}
+
+function syncData() {
+    loadLicitacoes();
+}
+
+// ========== EXPOSIÇÃO GLOBAL ==========
+window.openFormModal = openFormModal;
+window.closeFormModal = closeFormModal;
+window.salvarLicitacao = salvarLicitacao;
+window.editLicitacao = editLicitacao;
+window.openDeleteModal = openDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmarExclusao = confirmarExclusao;
+window.filterLicitacoes = filterLicitacoes;
+window.syncData = syncData;
+window.changeMonth = changeMonth;
+window.toggleCalendar = toggleCalendar;
+window.viewLicitacao = viewLicitacao;
+window.voltar = voltar;
+window.abrirModalVencidos = abrirModalVencidos;
+window.fecharModalVencidos = fecharModalVencidos;
+window.vencidosPageChange = vencidosPageChange;
+window.adicionarItem = adicionarItem;
+window.salvarItem = salvarItem;
+window.fecharItemModal = fecharItemModal;
+window.filterItens = filterItens;
+window.syncItens = syncItens;
+window.abrirModalCotacao = abrirModalCotacao;
+window.fecharModalCotacao = fecharModalCotacao;
+window.copiarMensagemCotacao = copiarMensagemCotacao;
+window.gerarMensagemCotacao = gerarMensagemCotacao;
+window.switchItemTab = switchItemTab;
+window.toggleStatus = toggleStatus;
+window.recalcularItemTotais = recalcularItemTotais;
