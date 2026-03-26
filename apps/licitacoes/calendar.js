@@ -42,7 +42,6 @@ function renderCalendarDays() {
     
     monthYearElement.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
     
-    // Dias com registros
     const diasComRegistros = new Set();
     licitacoes.forEach(l => {
         if (l.data) {
@@ -57,11 +56,9 @@ function renderCalendarDays() {
     const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
     
     let html = '';
-    
     for (let i = 0; i < firstDay; i++) {
         html += '<div class="calendar-day empty"></div>';
     }
-    
     for (let d = 1; d <= daysInMonth; d++) {
         const hasRecord = diasComRegistros.has(d);
         const isToday = (calendarYear === new Date().getFullYear() && 
@@ -71,7 +68,6 @@ function renderCalendarDays() {
         html += `<div class="calendar-day ${hasRecord ? 'has-record' : ''} ${isToday ? 'today' : ''}" 
                       onclick="selectDay(${d})">${d}</div>`;
     }
-    
     daysContainer.innerHTML = html;
 }
 
