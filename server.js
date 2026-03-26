@@ -247,7 +247,7 @@ app.get('/api/licitacoes/:id/itens', authenticate, async (req, res) => {
             .from('itens')
             .select('*')
             .eq('licitacao_id', id)
-            .order('numero');
+            .order('numero_item', { ascending: true }); // ✅ CORRIGIDO: era .order('numero')
         if (error) throw error;
         res.json(data);
     } catch (err) {
@@ -320,7 +320,7 @@ app.post('/api/licitacoes/:id/itens/delete-multiple', authenticate, async (req, 
     }
 });
 
-// ========== ROTAS DE PREÇOS (resumidas) ==========
+// ========== ROTAS DE PREÇOS ==========
 app.get('/api/marcas', authenticate, async (req, res) => {
     try {
         const { data, error } = await supabase.from('precos').select('marca').order('marca');
@@ -402,7 +402,7 @@ app.delete('/api/precos/:id', authenticate, async (req, res) => {
     }
 });
 
-// ========== ROTAS DE FORNECEDORES (resumidas) ==========
+// ========== ROTAS DE FORNECEDORES ==========
 app.get('/api/fornecedores', authenticate, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
