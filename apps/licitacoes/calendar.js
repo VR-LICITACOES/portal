@@ -1,5 +1,5 @@
 // ============================================
-// CALENDAR MODAL FUNCTIONALITY (dias do mês)
+// CALENDAR MODAL (dias do mês com registros)
 // ============================================
 
 let calendarYear = new Date().getFullYear();
@@ -17,11 +17,6 @@ function toggleCalendar() {
     }
 }
 
-function changeCalendarYear(direction) {
-    calendarYear += direction;
-    renderCalendarDays();
-}
-
 function changeCalendarMonth(direction) {
     calendarMonth += direction;
     if (calendarMonth < 0) {
@@ -35,18 +30,19 @@ function changeCalendarMonth(direction) {
 }
 
 function renderCalendarDays() {
-    const yearMonthElement = document.getElementById('calendarYearMonth');
+    const monthYearElement = document.getElementById('calendarMonthYear');
     const daysContainer = document.getElementById('calendarDays');
     
-    if (!yearMonthElement || !daysContainer) return;
+    if (!monthYearElement || !daysContainer) return;
     
     const monthNames = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
     
-    yearMonthElement.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
+    monthYearElement.textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
     
+    // Dias com registros
     const diasComRegistros = new Set();
     licitacoes.forEach(l => {
         if (l.data) {
@@ -60,11 +56,7 @@ function renderCalendarDays() {
     const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
     const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
     
-    let html = '<div class="calendar-weekdays">';
-    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(day => {
-        html += `<div class="calendar-weekday">${day}</div>`;
-    });
-    html += '</div><div class="calendar-days-grid">';
+    let html = '';
     
     for (let i = 0; i < firstDay; i++) {
         html += '<div class="calendar-day empty"></div>';
@@ -80,16 +72,21 @@ function renderCalendarDays() {
                       onclick="selectDay(${d})">${d}</div>`;
     }
     
-    html += '</div>';
     daysContainer.innerHTML = html;
 }
 
 function selectDay(day) {
     const selectedDate = new Date(calendarYear, calendarMonth, day);
-    currentMonth = selectedDate;
-    isAllMonths = false;
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    currentMonth = new Date(calendarYear, calendarMonth, 1);
     updateMonthDisplay();
-    loadLicitacoes();
+    loadLicitacoes().then(() => {
+        const search = document.getElementById('search');
+        if (search) search.value = dateStr;
+        filterLicitacoes();
+    });
+    
     toggleCalendar();
 }
 
