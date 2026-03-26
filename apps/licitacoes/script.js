@@ -594,17 +594,15 @@ function renderItens() {
     `).join('');
 }
 
+/ ========== ATUALIZAR TOTAIS (apenas custo e venda) ==========
 function atualizarTotais() {
     const totalCusto = itens.reduce((acc, i) => acc + (i.custo_total || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (i.venda_total || 0), 0);
-    const margem = totalCusto ? ((totalVenda - totalCusto) / totalCusto * 100).toFixed(2) : 0;
     
     const totalCustoSpan = document.getElementById('totalCusto');
     const totalVendaSpan = document.getElementById('totalVenda');
-    const totalMargemSpan = document.getElementById('totalMargem');
     if (totalCustoSpan) totalCustoSpan.textContent = formatMoney(totalCusto);
     if (totalVendaSpan) totalVendaSpan.textContent = formatMoney(totalVenda);
-    if (totalMargemSpan) totalMargemSpan.textContent = `${margem}%`;
 }
 
 function formatMoney(value) {
