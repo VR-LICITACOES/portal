@@ -23,13 +23,18 @@
                         <span class="status-dot"></span>
                     </div>
                 </div>
-                <button onclick="openFormModal()" class="btn-new-order-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Nova Proposta
-                </button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button onclick="openFormModal()" class="btn-new-order-header">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nova Proposta
+                    </button>
+                    <button id="btnExcluirSelecionados" class="btn-delete-selected" style="display: none;" onclick="excluirSelecionados()">
+                        Excluir Selecionados
+                    </button>
+                </div>
             </div>
 
             <!-- DASHBOARD CARDS -->
@@ -230,7 +235,7 @@
                 </div>
             </div>
 
-            <!-- MODAL EXCLUIR -->
+            <!-- MODAL EXCLUIR (único) -->
             <div class="modal-overlay" id="deleteModal">
                 <div class="modal-content modal-delete">
                     <button class="close-modal" onclick="closeDeleteModal()">✕</button>
@@ -275,12 +280,63 @@
                 </div>
             </div>
 
+            <!-- MODAL ITEM (adicionar/editar) -->
+            <div class="modal-overlay" id="itemModal">
+                <div class="modal-content" style="max-width: 800px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title" id="itemModalTitle">Adicionar Item</h3>
+                        <button class="close-modal" onclick="fecharItemModal()">✕</button>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nº Item</label>
+                            <input type="number" id="itemNumero" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição *</label>
+                            <input type="text" id="itemDescricao" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade *</label>
+                            <input type="number" step="any" id="itemQuantidade" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unidade</label>
+                            <input type="text" id="itemUnidade">
+                        </div>
+                        <div class="form-group">
+                            <label>Marca</label>
+                            <input type="text" id="itemMarca">
+                        </div>
+                        <div class="form-group">
+                            <label>Modelo</label>
+                            <input type="text" id="itemModelo">
+                        </div>
+                        <div class="form-group">
+                            <label>Custo Unitário</label>
+                            <input type="number" step="any" id="itemCustoUnitario">
+                        </div>
+                        <div class="form-group">
+                            <label>Venda Unitário</label>
+                            <input type="number" step="any" id="itemVendaUnitario">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="success" onclick="salvarItem()">Salvar</button>
+                        <button class="danger" onclick="fecharItemModal()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- TABELA PRINCIPAL -->
             <div class="card table-card">
                 <div style="overflow-x: auto;">
-                    <table>
+                    <table style="min-width: 800px;">
                         <thead>
                             <tr>
+                                <th style="width: 40px; text-align: center;">
+                                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                                </th>
                                 <th>Nº Proposta</th>
                                 <th>Data</th>
                                 <th>Hora</th>
