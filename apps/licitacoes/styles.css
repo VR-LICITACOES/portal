@@ -699,7 +699,8 @@ input:focus, select:focus, textarea:focus {
 .descricao-cell {
     word-break: break-word;
     white-space: normal;
-    max-width: 300px;
+    max-width: 260px;
+    min-width: 140px;
 }
 
 /* SUBTÍTULO DA TELA DE ITENS */
@@ -720,6 +721,7 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     gap: 2rem;
     font-size: 0.9rem;
+    flex-wrap: wrap;
 }
 
 /* CHECKBOX ESTILIZADO */
@@ -898,6 +900,80 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ============================================
+   LINK CLICÁVEL NA TABELA DE ITENS
+   ============================================ */
+.link-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #3B82F6;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    transition: background 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.link-cell:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+    text-decoration: none;
+}
+.link-cell svg {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+/* Linha com LINK no modelo — reaproveita row-cotado */
+tbody tr.row-link {
+    background: rgba(59, 130, 246, 0.22) !important;
+}
+tbody tr.row-link:nth-child(even) {
+    background: rgba(59, 130, 246, 0.30) !important;
+}
+tbody tr.row-link:hover {
+    background: rgba(59, 130, 246, 0.38) !important;
+}
+
+/* ============================================
+   COLUNAS DA TABELA DE ITENS — sem scroll
+   ============================================ */
+/* Coluna ITEM */
+td:first-child, th:first-child {
+    min-width: 50px;
+    width: 50px;
+}
+/* Coluna DESCRIÇÃO */
+.descricao-cell {
+    word-break: break-word;
+    white-space: normal;
+    min-width: 140px;
+    max-width: 260px;
+}
+/* Colunas numéricas pequenas */
+.col-num {
+    white-space: nowrap;
+    min-width: 56px;
+}
+/* Colunas de texto curto (UND, MARCA, MODELO) */
+.col-short {
+    white-space: normal;
+    word-break: break-word;
+    min-width: 60px;
+    max-width: 120px;
+}
+/* Colunas de valor monetário */
+.col-money {
+    white-space: nowrap;
+    min-width: 90px;
+}
+
+/* ============================================
    MENU DE CONTEXTO (CLIQUE DIREITO)
    ============================================ */
 #itemContextMenu {
@@ -949,4 +1025,5 @@ input:focus, select:focus, textarea:focus {
     .actions-cell { min-width: auto; }
     .modal-actions { flex-direction: column-reverse; }
     .modal-actions button { width: 100%; }
+    .totals-bar { gap: 1rem; }
 }
