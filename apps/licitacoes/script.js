@@ -3,23 +3,23 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:10000/api'
     : `${window.location.origin}/api`;
 
-let licitacoes       = [];
-let itens            = [];
+let licitacoes = [];
+let itens = [];
 let currentLicitacaoId = null;
-let editingId        = null;
-let editingItemId    = null;
-let isOnline         = false;
-let sessionToken     = null;
+let editingId = null;
+let editingItemId = null;
+let isOnline = false;
+let sessionToken = null;
 let consecutive401Count = 0;
 const MAX_401_BEFORE_LOGOUT = 3;
-let currentMonth     = new Date();
+let currentMonth = new Date();
 let currentFetchController = null;
-let vencidosPage     = 1;
+let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
 let currentDateFilter = null;
 
-// IDs dos itens que já foram enviados para cotação nesta sessão
-let itensCotados = new Set();
+console.log('🚀 Licitações iniciada');
+console.log('📍 API URL:', API_URL);
 
 document.addEventListener('DOMContentLoaded', () => {
     verificarAutenticacao();
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ========== AUTENTICAÇÃO ==========
 function verificarAutenticacao() {
-    const urlParams  = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('sessionToken');
     sessionToken = tokenFromUrl || sessionStorage.getItem('licitacoesSession');
     if (tokenFromUrl) {
@@ -45,16 +45,16 @@ function verificarAutenticacao() {
 
 function mostrarTelaAcessoNegado() {
     document.body.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                    height:100vh;background:var(--bg-app);color:var(--text-primary);text-align:center;padding:2rem;">
-            <h1 style="font-size:2rem;margin-bottom:1rem;font-weight:700;">NÃO AUTORIZADO</h1>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:var(--bg-primary);color:var(--text-primary);text-align:center;padding:2rem;">
+            <h1 style="font-size:2.2rem;margin-bottom:1rem;">NÃO AUTORIZADO</h1>
             <p style="color:var(--text-secondary);margin-bottom:2rem;">Somente usuários autenticados podem acessar esta área.</p>
-            <a href="/" style="display:inline-block;background:var(--btn-register);color:white;
-               padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;">Ir para o Portal</a>
+            <a href="/" style="display:inline-block;background:var(--btn-register);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Ir para o Portal</a>
         </div>`;
 }
 
-function inicializarApp() { loadLicitacoes(); }
+function inicializarApp() {
+    loadLicitacoes();
+}
 
 // ========== CONEXÃO ==========
 function getHeaders() {
@@ -65,17 +65,23 @@ function getHeaders() {
 
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     const ctrl = new AbortController();
-    const tid  = setTimeout(() => ctrl.abort(), timeout);
+    const tid = setTimeout(() => ctrl.abort(), timeout);
     try {
         const res = await fetch(url, { ...options, signal: ctrl.signal, mode: 'cors' });
         clearTimeout(tid);
         return res;
-    } catch (err) { clearTimeout(tid); throw err; }
+    } catch (err) {
+        clearTimeout(tid);
+        throw err;
+    }
 }
 
 async function checkServerStatus() {
     try {
-        const res = await fetchWithTimeout(`${API_URL}/licitacoes?limit=1`, { method: 'GET', headers: getHeaders() });
+        const res = await fetchWithTimeout(`${API_URL}/licitacoes?limit=1`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
         if (res.status === 401) {
             consecutive401Count++;
             if (consecutive401Count >= MAX_401_BEFORE_LOGOUT) {
@@ -102,10 +108,8 @@ function updateConnectionStatus() {
 
 // ========== NAVEGAÇÃO DE MÊS ==========
 function updateMonthDisplay() {
-    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const el = document.getElementById('currentMonth');
-    if (el) el.textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    document.getElementById('currentMonth').textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 }
 
 function changeMonth(direction) {
@@ -124,29 +128,37 @@ async function loadLicitacoes() {
     const url = `${API_URL}/licitacoes?mes=${currentMonth.getMonth()+1}&ano=${currentMonth.getFullYear()}`;
     try {
         const res = await fetch(url, { method: 'GET', headers: getHeaders(), signal });
-        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
+        if (res.status === 401) {
+            sessionStorage.removeItem('licitacoesSession');
+            mostrarTelaAcessoNegado();
+            return;
+        }
         if (!res.ok) return;
         licitacoes = await res.json();
         updateDisplay();
         verificarPrazosVencidos();
     } catch (err) {
         if (err.name !== 'AbortError') console.error('Erro ao carregar licitações:', err);
-    } finally { currentFetchController = null; }
+    } finally {
+        currentFetchController = null;
+    }
 }
 
-function updateDisplay() { updateStats(); filterLicitacoes(); }
+function updateDisplay() {
+    updateStats();
+    filterLicitacoes();
+}
 
 function updateStats() {
-    const total    = licitacoes.length;
+    const total = licitacoes.length;
     const enviadas = licitacoes.filter(l => l.status === 'ENVIADA').length;
-    const abertas  = licitacoes.filter(l => l.status === 'ABERTA').length;
-    const hoje     = new Date().toISOString().split('T')[0];
+    const abertas = licitacoes.filter(l => l.status === 'ABERTA').length;
+    const hoje = new Date().toISOString().split('T')[0];
     const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje).length;
-
     document.getElementById('totalLicitacoes').textContent = total;
-    document.getElementById('totalEnviadas').textContent   = enviadas;
-    document.getElementById('totalAbertas').textContent    = abertas;
-    document.getElementById('totalVencidas').textContent   = vencidas;
+    document.getElementById('totalEnviadas').textContent = enviadas;
+    document.getElementById('totalAbertas').textContent = abertas;
+    document.getElementById('totalVencidas').textContent = vencidas;
 
     const card = document.getElementById('prazoVencidoCard');
     if (vencidas > 0) {
@@ -166,50 +178,51 @@ function updateStats() {
 }
 
 function filterLicitacoes() {
-    const search       = (document.getElementById('search')?.value || '').toLowerCase();
+    const search = (document.getElementById('search')?.value || '').toLowerCase();
     const statusFilter = document.getElementById('filterStatus')?.value || '';
     let filtered = licitacoes.filter(l => {
-        const matchSearch = l.numero_proposta.toLowerCase().includes(search) ||
-                            (l.uf && l.uf.toLowerCase().includes(search));
+        const matchSearch = l.numero_proposta.toLowerCase().includes(search) || (l.uf && l.uf.toLowerCase().includes(search));
         const matchStatus = !statusFilter || l.status === statusFilter;
         return matchSearch && matchStatus;
     });
-    if (currentDateFilter) filtered = filtered.filter(l => l.data === currentDateFilter);
+    if (currentDateFilter) {
+        filtered = filtered.filter(l => l.data === currentDateFilter);
+    }
     renderLicitacoes(filtered);
 }
 
 function formatDateToBR(dateStr) {
     if (!dateStr) return '-';
-    const [y, m, d] = dateStr.split('-');
-    return `${d}/${m}/${y}`;
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
 }
 
 function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--text-muted);">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => {
         const isEnviada = l.status === 'ENVIADA';
         return `
         <tr class="${isEnviada ? 'row-enviada' : ''}">
-            <td style="text-align:center; width:46px;" onclick="event.stopPropagation()">
+            <td style="text-align:center;" onclick="event.stopPropagation()">
                 <div class="checkbox-wrapper">
                     <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${isEnviada ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
                     <label for="check-${l.id}" class="checkbox-label-styled"></label>
                 </div>
             </td>
-            <td onclick="viewLicitacao('${l.id}')"><strong style="font-weight:600;">${l.numero_proposta}</strong></td>
+            <td onclick="viewLicitacao('${l.id}')"><strong>${l.numero_proposta}</strong></td>
             <td onclick="viewLicitacao('${l.id}')">${formatDateToBR(l.data)}</td>
-            <td onclick="viewLicitacao('${l.id}')">${l.hora || '—'}</td>
-            <td onclick="viewLicitacao('${l.id}')">${l.uf || '—'}</td>
-            <td class="col-status" style="text-align:center;" onclick="viewLicitacao('${l.id}')">
+            <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
+            <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
+            <td onclick="viewLicitacao('${l.id}')" class="status-col">
                 <span class="status-badge ${isEnviada ? 'success' : 'warning'}">${l.status}</span>
             </td>
             <td class="actions-cell" onclick="event.stopPropagation()">
-                <button class="action-btn edit"   onclick="editLicitacao('${l.id}')">Editar</button>
+                <button class="action-btn edit" onclick="editLicitacao('${l.id}')">Editar</button>
                 <button class="action-btn delete" onclick="openDeleteModal('${l.id}')">Excluir</button>
             </td>
         </tr>`;
@@ -222,8 +235,8 @@ async function toggleStatus(id) {
     const novoStatus = proposta.status === 'ENVIADA' ? 'ABERTA' : 'ENVIADA';
     if (!isOnline) {
         showToast('Sistema offline', 'error');
-        const cb = document.getElementById(`check-${id}`);
-        if (cb) cb.checked = proposta.status === 'ENVIADA';
+        const checkbox = document.getElementById(`check-${id}`);
+        if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
         return;
     }
     try {
@@ -242,14 +255,14 @@ async function toggleStatus(id) {
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao atualizar status');
         const updated = await res.json();
-        const idx = licitacoes.findIndex(l => l.id === updated.id);
-        if (idx !== -1) licitacoes[idx] = updated;
+        const index = licitacoes.findIndex(l => l.id === updated.id);
+        if (index !== -1) licitacoes[index] = updated;
         updateDisplay();
-        showToast(`Proposta ${novoStatus === 'ENVIADA' ? 'marcada como enviada' : 'reaberta'}`, 'success');
+        showToast(`Proposta ${novoStatus === 'ENVIADA' ? 'enviada' : 'reaberta'} com sucesso!`, 'success');
     } catch (err) {
         showToast(err.message, 'error');
-        const cb = document.getElementById(`check-${id}`);
-        if (cb) cb.checked = proposta.status === 'ENVIADA';
+        const checkbox = document.getElementById(`check-${id}`);
+        if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
     }
 }
 
@@ -260,33 +273,35 @@ function openFormModal(editId = null) {
     if (editId) {
         const l = licitacoes.find(l => l.id === editId);
         document.getElementById('numeroProposta').value = l.numero_proposta;
-        document.getElementById('dataProposta').value   = l.data;
-        document.getElementById('horaProposta').value   = l.hora || '';
-        document.getElementById('ufProposta').value     = l.uf || '';
+        document.getElementById('dataProposta').value = l.data;
+        document.getElementById('horaProposta').value = l.hora || '';
+        document.getElementById('ufProposta').value = l.uf || '';
     } else {
         document.getElementById('numeroProposta').value = '';
-        document.getElementById('dataProposta').value   = new Date().toISOString().split('T')[0];
-        document.getElementById('horaProposta').value   = '';
-        document.getElementById('ufProposta').value     = '';
+        document.getElementById('dataProposta').value = new Date().toISOString().split('T')[0];
+        document.getElementById('horaProposta').value = '';
+        document.getElementById('ufProposta').value = '';
     }
     document.getElementById('formModal').classList.add('show');
 }
+
 function closeFormModal(showCancel = true) {
     document.getElementById('formModal').classList.remove('show');
     if (showCancel) showToast('Operação cancelada', 'error');
 }
+
 async function salvarLicitacao() {
     const data = {
         numero_proposta: document.getElementById('numeroProposta').value.trim(),
-        data:   document.getElementById('dataProposta').value,
-        hora:   document.getElementById('horaProposta').value || null,
-        uf:     document.getElementById('ufProposta').value || null,
+        data: document.getElementById('dataProposta').value,
+        hora: document.getElementById('horaProposta').value || null,
+        uf: document.getElementById('ufProposta').value || null,
         status: 'ABERTA'
     };
     if (!data.numero_proposta || !data.data) { showToast('Número e data são obrigatórios', 'error'); return; }
     if (!isOnline) { showToast('Sistema offline', 'error'); closeFormModal(false); return; }
     try {
-        const url    = editingId ? `${API_URL}/licitacoes/${editingId}` : `${API_URL}/licitacoes`;
+        const url = editingId ? `${API_URL}/licitacoes/${editingId}` : `${API_URL}/licitacoes`;
         const method = editingId ? 'PUT' : 'POST';
         const res = await fetchWithTimeout(url, {
             method,
@@ -304,6 +319,7 @@ async function salvarLicitacao() {
         loadLicitacoes();
     } catch (err) { showToast(err.message, 'error'); }
 }
+
 function editLicitacao(id) { openFormModal(id); }
 
 function openDeleteModal(id) {
@@ -330,41 +346,45 @@ async function confirmarExclusao() {
 
 // ========== MODAL PRAZO VENCIDO ==========
 function abrirModalVencidos() {
-    const hoje    = new Date().toISOString().split('T')[0];
+    const hoje = new Date().toISOString().split('T')[0];
     const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
-    vencidosPage  = 1;
+    vencidosPage = 1;
     renderVencidosModal(vencidas);
     document.getElementById('modalVencidos').classList.add('show');
 }
+
 function renderVencidosModal(vencidas) {
-    const start     = (vencidosPage - 1) * VENCIDOS_PAGE_SIZE;
-    const pageData  = vencidas.slice(start, start + VENCIDOS_PAGE_SIZE);
-    const totalPages= Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
-    const tbody     = document.getElementById('vencidosTableBody');
+    const start = (vencidosPage - 1) * VENCIDOS_PAGE_SIZE;
+    const pageData = vencidas.slice(start, start + VENCIDOS_PAGE_SIZE);
+    const totalPages = Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
+    const tbody = document.getElementById('vencidosTableBody');
     if (!tbody) return;
     tbody.innerHTML = pageData.length === 0
-        ? '<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Nenhuma proposta com vencimento hoje</td></tr>'
-        : pageData.map(l => `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();">
-            <td>${l.numero_proposta}</td><td>${formatDateToBR(l.data)}</td><td>${l.hora || '—'}</td>
-          </tr>`).join('');
-    const pag = document.getElementById('vencidosPaginacao');
-    if (pag && totalPages > 1) {
+        ? '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>'
+        : pageData.map(l => `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();"><td>${l.numero_proposta}</td><td>${formatDateToBR(l.data)}</td><td>${l.hora || '-'}</td></tr>`).join('');
+    const pagContainer = document.getElementById('vencidosPaginacao');
+    if (pagContainer && totalPages > 1) {
         let h = '<div class="paginacao-btns">';
         h += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage-1})" ${vencidosPage===1?'disabled':''}>‹</button>`;
-        for (let i = 1; i <= totalPages; i++)
-            h += `<button class="pag-btn ${i===vencidosPage?'pag-btn-active':''}" onclick="vencidosPageChange(${i})">${i}</button>`;
+        for (let i = 1; i <= totalPages; i++) h += `<button class="pag-btn ${i===vencidosPage?'pag-btn-active':''}" onclick="vencidosPageChange(${i})">${i}</button>`;
         h += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage+1})" ${vencidosPage===totalPages?'disabled':''}>›</button></div>`;
-        pag.innerHTML = h;
-    } else if (pag) { pag.innerHTML = ''; }
+        pagContainer.innerHTML = h;
+    } else if (pagContainer) { pagContainer.innerHTML = ''; }
 }
+
 function vencidosPageChange(page) {
-    const hoje    = new Date().toISOString().split('T')[0];
+    const hoje = new Date().toISOString().split('T')[0];
     const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
     if (page >= 1 && page <= Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE)) {
-        vencidosPage = page; renderVencidosModal(vencidas);
+        vencidosPage = page;
+        renderVencidosModal(vencidas);
     }
 }
-function fecharModalVencidos() { document.getElementById('modalVencidos').classList.remove('show'); }
+
+function fecharModalVencidos() {
+    document.getElementById('modalVencidos').classList.remove('show');
+}
+
 function verificarPrazosVencidos() { updateStats(); }
 
 // ========== SYNC PRINCIPAL ==========
@@ -378,7 +398,6 @@ function syncData() {
 // ========== TELA DE ITENS ==========
 function viewLicitacao(id) {
     currentLicitacaoId = id;
-    itensCotados = new Set(); // reseta marcação ao entrar numa proposta
     mostrarTelaItens();
     carregarItens(id);
 }
@@ -400,191 +419,186 @@ function mostrarTelaItens() {
     }
 
     const proposta = licitacoes.find(l => l.id === currentLicitacaoId);
-    const numProposta = proposta ? proposta.numero_proposta : '';
+    const numeroProposta = proposta ? proposta.numero_proposta : '';
 
     tela.innerHTML = `
-    <div class="container" id="containerItens">
-        <!-- HEADER -->
-        <div class="header">
-            <div class="header-left">
-                <div>
-                    <h1>Itens da Proposta</h1>
-                    <p class="proposta-subtitulo">Proposta Nº ${numProposta}</p>
+        <div class="container" id="containerItens">
+            <!-- HEADER -->
+            <div class="header">
+                <div class="header-left">
+                    <div>
+                        <h1>Itens da Proposta</h1>
+                        <p class="proposta-subtitulo">Proposta Nº ${numeroProposta}</p>
+                    </div>
+                </div>
+                <div></div>
+            </div>
+
+            <!-- SEARCH BAR -->
+            <div class="search-bar-wrapper">
+                <div class="search-bar">
+                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" id="searchItens" placeholder="Pesquisar itens" oninput="filterItens()">
+                    <div class="search-bar-filters" style="margin-left:auto;">
+                        <button onclick="adicionarItem()" class="calendar-btn" title="Adicionar item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="abrirModalCotacao()" class="calendar-btn" title="Enviar cotação">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                            </svg>
+                        </button>
+                        <button onclick="syncItens()" class="calendar-btn" title="Sincronizar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                        </button>
+                        <button onclick="voltar()" class="calendar-btn" title="Voltar">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div></div>
+
+            <!-- TABELA DE ITENS -->
+            <div class="card table-card">
+                <div style="overflow-x:auto;">
+                    <table style="min-width:1000px;">
+                        <thead>
+                            <tr>
+                                <th>ITEM</th>
+                                <th style="min-width:250px;">DESCRIÇÃO</th>
+                                <th>QTD</th>
+                                <th>UND</th>
+                                <th>MARCA</th>
+                                <th>MODELO</th>
+                                <th>CUSTO UNT</th>
+                                <th>CUSTO TOTAL</th>
+                                <th>VENDA UNT</th>
+                                <th>VENDA TOTAL</th>
+                                <th>FRETE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itensContainer"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TOTAIS -->
+            <div class="totals-bar">
+                <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
+                <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
+                <span><strong>TOTAL FRETE:</strong> <span id="totalFrete">R$ 0,00</span></span>
+                <span><strong>LUCRO B TOTAL:</strong> <span id="totalLucroBruto">R$ 0,00</span></span>
+            </div>
         </div>
 
-        <!-- SEARCH BAR -->
-        <div class="search-bar-wrapper">
-            <div class="search-bar">
-                <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input type="text" id="searchItens" placeholder="Pesquisar itens..." oninput="filterItens()">
-                <div class="search-bar-filters" style="margin-left:auto;">
-                    <button onclick="adicionarItem()" class="calendar-btn" title="Adicionar item">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    </button>
-                    <button onclick="abrirModalCotacao()" class="calendar-btn" title="Enviar cotação">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                    </button>
-                    <button onclick="syncItens()" class="calendar-btn" title="Sincronizar">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                    </button>
-                    <button onclick="voltar()" class="calendar-btn" title="Voltar">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    </button>
+        <!-- ===== MODAL: ADICIONAR / EDITAR ITEM ===== -->
+        <div class="modal-overlay" id="itemModal">
+            <div class="modal-content" style="max-width:900px">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="itemModalTitle">Adicionar Item</h3>
+                    <button class="close-modal" onclick="fecharItemModal()">✕</button>
+                </div>
+                <div class="tabs-container">
+                    <div class="tabs-nav">
+                        <button class="tab-btn active" onclick="switchItemTab('item-tab-geral')">Geral</button>
+                        <button class="tab-btn" onclick="switchItemTab('item-tab-transporte')">Transporte</button>
+                        <button class="tab-btn" onclick="switchItemTab('item-tab-valores')">Valores</button>
+                    </div>
+                    <div class="tab-content active" id="item-tab-geral">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Nº Item</label><input type="number" id="itemNumero" readonly></div>
+                            <div class="form-group"><label>Descrição *</label><input type="text" id="itemDescricao" required></div>
+                            <div class="form-group"><label>Quantidade *</label><input type="number" step="any" id="itemQuantidade" required onchange="recalcularItemTotais()"></div>
+                            <div class="form-group">
+                                <label>Unidade</label>
+                                <select id="itemUnidade">
+                                    <option value="UN">UN</option><option value="CX">CX</option>
+                                    <option value="MT">MT</option><option value="PCT">PCT</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Marca</label><input type="text" id="itemMarca"></div>
+                            <div class="form-group"><label>Modelo</label><input type="text" id="itemModelo"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="item-tab-transporte">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Prazo de Entrega</label><input type="text" id="itemPrazoEntrega"></div>
+                            <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete"></div>
+                        </div>
+                    </div>
+                    <div class="tab-content" id="item-tab-valores">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Custo Unitário</label><input type="number" step="any" id="itemCustoUnitario" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Custo Total</label><input type="text" id="itemCustoTotal" readonly></div>
+                            <div class="form-group"><label>Venda Unitário</label><input type="number" step="any" id="itemVendaUnitario" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Venda Total</label><input type="text" id="itemVendaTotal" readonly></div>
+                            <div class="form-group"><label>Lucro Bruto</label><input type="text" id="itemLucroBruto" readonly></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="success" onclick="salvarItem()">Salvar</button>
+                    <button class="danger" onclick="fecharItemModal()">Cancelar</button>
                 </div>
             </div>
         </div>
 
-        <!-- TABELA DE ITENS -->
-        <div class="card table-card">
-            <div style="overflow-x:auto;">
-                <table style="min-width:1050px;">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th style="min-width:220px;">Descrição</th>
-                            <th>Qtd</th>
-                            <th>Und</th>
-                            <th>Marca</th>
-                            <th>Modelo</th>
-                            <th>Custo Unt</th>
-                            <th>Custo Total</th>
-                            <th>Venda Unt</th>
-                            <th>Venda Total</th>
-                            <th>Frete</th>
-                            <th>Lucro Bruto</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itensContainer"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- BARRA DE TOTAIS -->
-        <div class="totals-bar" id="totalsBar">
-            <span><strong>Custo Total:</strong> <span id="totalCusto">R$ 0,00</span></span>
-            <span><strong>Venda Total:</strong> <span id="totalVenda">R$ 0,00</span></span>
-            <span><strong>Total Frete:</strong> <span id="totalFrete">R$ 0,00</span></span>
-            <span><strong>Lucro B. Total:</strong> <span id="totalLucroBruto">R$ 0,00</span></span>
-        </div>
-    </div>
-
-    <!-- ===== MODAL: ADICIONAR / EDITAR ITEM ===== -->
-    <div class="modal-overlay" id="itemModal">
-        <div class="modal-content" style="max-width:860px">
-            <div class="modal-header">
-                <h3 class="modal-title" id="itemModalTitle">Adicionar Item</h3>
-                <button class="close-modal" onclick="fecharItemModal()">✕</button>
-            </div>
-            <div class="tabs-container">
-                <div class="tabs-nav">
-                    <button class="tab-btn active" onclick="switchItemTab('item-tab-geral')">Geral</button>
-                    <button class="tab-btn" onclick="switchItemTab('item-tab-transporte')">Transporte</button>
-                    <button class="tab-btn" onclick="switchItemTab('item-tab-valores')">Valores</button>
+        <!-- ===== MODAL: COTAÇÃO ===== -->
+        <div class="modal-overlay" id="modalCotacaoItens">
+            <div class="modal-content" style="max-width:520px">
+                <div class="modal-header">
+                    <h3 class="modal-title">Enviar Cotação</h3>
+                    <button class="close-modal" onclick="fecharModalCotacao()">✕</button>
                 </div>
-
-                <div class="tab-content active" id="item-tab-geral">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Nº Item</label><input type="number" id="itemNumero" readonly></div>
-                        <div class="form-group"><label>Descrição *</label><input type="text" id="itemDescricao" required></div>
-                        <div class="form-group"><label>Quantidade *</label><input type="number" step="any" id="itemQuantidade" required oninput="recalcularItemTotais()"></div>
-                        <div class="form-group">
-                            <label>Unidade</label>
-                            <select id="itemUnidade">
-                                <option value="UN">UN</option><option value="CX">CX</option>
-                                <option value="MT">MT</option><option value="PCT">PCT</option>
+                <div class="form-grid" style="grid-template-columns:1fr;">
+                    <div class="form-group">
+                        <label>Fornecedor (Marca)</label>
+                        <div class="filter-dropdown-inline" style="min-width:unset;">
+                            <select id="cotacaoFornecedorSelect">
+                                <option value="">Selecione a marca...</option>
                             </select>
+                            <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </div>
-                        <div class="form-group"><label>Marca</label><input type="text" id="itemMarca"></div>
-                        <div class="form-group"><label>Modelo</label><input type="text" id="itemModelo"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de envio</label>
+                        <div style="display:flex;gap:1rem;padding:0.25rem 0;">
+                            <div class="cotacao-tipo-card active" id="cotacaoCardDescricao" onclick="selecionarTipoCotacao('descricao')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                                <span>Descrição</span>
+                            </div>
+                            <div class="cotacao-tipo-card" id="cotacaoCardModelo" onclick="selecionarTipoCotacao('modelo')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                <span>Modelo</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="cotacaoTipoHidden" value="descricao">
                     </div>
                 </div>
-
-                <div class="tab-content" id="item-tab-transporte">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Prazo de Entrega</label><input type="text" id="itemPrazoEntrega"></div>
-                        <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete" oninput="recalcularItemTotais()"></div>
-                    </div>
+                <div class="modal-actions" style="border-top:none;padding-top:0;">
+                    <button onclick="enviarCotacao()" id="btnEnviarCotacao" style="background:var(--btn-save);color:white;border:none;">
+                        <span id="btnEnviarCotacaoLabel">Enviar</span>
+                    </button>
+                    <button onclick="fecharModalCotacao()" style="background:var(--btn-delete);color:white;border:none;">Cancelar</button>
                 </div>
-
-                <div class="tab-content" id="item-tab-valores">
-                    <div class="form-grid">
-                        <div class="form-group"><label>Custo Unitário</label><input type="number" step="any" id="itemCustoUnitario" oninput="recalcularItemTotais()"></div>
-                        <div class="form-group"><label>Custo Total</label><input type="text" id="itemCustoTotal" readonly></div>
-                        <div class="form-group"><label>Venda Unitário</label><input type="number" step="any" id="itemVendaUnitario" oninput="recalcularItemTotais()"></div>
-                        <div class="form-group"><label>Venda Total</label><input type="text" id="itemVendaTotal" readonly></div>
-                        <div class="form-group"><label>Frete</label><input type="text" id="itemFreteDisplay" readonly></div>
-                        <div class="form-group"><label>Lucro Bruto</label><input type="text" id="itemLucroBruto" readonly></div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="success" onclick="salvarItem()">Salvar</button>
-                <button class="danger"  onclick="fecharItemModal()">Cancelar</button>
             </div>
         </div>
-    </div>
-
-    <!-- ===== MODAL: COTAÇÃO ===== -->
-    <div class="modal-overlay" id="modalCotacaoItens">
-        <div class="modal-content" style="max-width:500px">
-            <div class="modal-header">
-                <h3 class="modal-title">Enviar Cotação</h3>
-                <button class="close-modal" onclick="fecharModalCotacao()">✕</button>
-            </div>
-
-            <div class="form-group" style="margin-bottom:1.25rem;">
-                <label>Fornecedor (Marca)</label>
-                <div class="filter-dropdown-inline" style="min-width:unset; margin-top:4px;">
-                    <select id="cotacaoFornecedorSelect">
-                        <option value="">Selecione a marca...</option>
-                    </select>
-                    <svg class="dropdown-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom:1.5rem;">
-                <label style="margin-bottom:8px;">Tipo de envio</label>
-                <div class="cotacao-tipo-grid">
-                    <div class="cotacao-tipo-card selected" id="tipoCardDescricao" onclick="selecionarTipoCotacao('descricao')">
-                        <div class="tipo-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                        </div>
-                        <span class="tipo-label">Descrição</span>
-                    </div>
-                    <div class="cotacao-tipo-card" id="tipoCardModelo" onclick="selecionarTipoCotacao('modelo')">
-                        <div class="tipo-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                        </div>
-                        <span class="tipo-label">Modelo</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-actions">
-                <button class="success" onclick="enviarCotacao()" id="btnEnviarCotacao">
-                    <span id="btnEnviarCotacaoLabel">Enviar</span>
-                </button>
-                <button class="danger" onclick="fecharModalCotacao()">Cancelar</button>
-            </div>
-        </div>
-    </div>
     `;
 
     tela.style.display = 'block';
-}
-
-// Variável de estado do tipo de cotação selecionado
-let cotacaoTipoAtual = 'descricao';
-
-function selecionarTipoCotacao(tipo) {
-    cotacaoTipoAtual = tipo;
-    document.getElementById('tipoCardDescricao')?.classList.toggle('selected', tipo === 'descricao');
-    document.getElementById('tipoCardModelo')?.classList.toggle('selected', tipo === 'modelo');
 }
 
 // ========== CRUD DE ITENS ==========
@@ -601,7 +615,7 @@ async function carregarItens(licitacaoId) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:2rem;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -611,16 +625,14 @@ function renderItens() {
     const search = (document.getElementById('searchItens')?.value || '').toLowerCase();
     const filtered = itens.filter(item =>
         (item.descricao || '').toLowerCase().includes(search) ||
-        (item.modelo    || '').toLowerCase().includes(search)
+        (item.modelo || '').toLowerCase().includes(search)
     );
     if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:2.5rem;color:var(--text-muted);">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
         return;
     }
-    tbody.innerHTML = filtered.map((item, idx) => {
-        const isCotado = itensCotados.has(item.id);
-        return `
-        <tr onclick="abrirEdicaoItem('${item.id}')" class="${isCotado ? 'row-cotado' : ''}" style="cursor:pointer;">
+    tbody.innerHTML = filtered.map((item, idx) => `
+        <tr onclick="abrirEdicaoItem('${item.id}')" style="cursor:pointer;" class="${item.cotado ? 'row-cotado' : ''}">
             <td>${item.numero || idx+1}</td>
             <td class="descricao-cell">${item.descricao || ''}</td>
             <td>${item.quantidade || 0}</td>
@@ -632,41 +644,43 @@ function renderItens() {
             <td>${formatMoney(item.venda_unitario)}</td>
             <td>${formatMoney(item.venda_total)}</td>
             <td>${formatMoney(item.frete)}</td>
-            <td>${formatMoney(item.lucro_bruto)}</td>
-        </tr>`;
-    }).join('');
+        </tr>`).join('');
 }
 
 function atualizarTotais() {
-    const totalCusto  = itens.reduce((a, i) => a + (parseFloat(i.custo_total)  || 0), 0);
-    const totalVenda  = itens.reduce((a, i) => a + (parseFloat(i.venda_total)  || 0), 0);
-    const totalFrete  = itens.reduce((a, i) => a + (parseFloat(i.frete)        || 0), 0);
-    const totalLucro  = itens.reduce((a, i) => a + (parseFloat(i.lucro_bruto)  || 0), 0);
-
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = formatMoney(val); };
-    set('totalCusto',      totalCusto);
-    set('totalVenda',      totalVenda);
-    set('totalFrete',      totalFrete);
-    set('totalLucroBruto', totalLucro);
+    const totalCusto = itens.reduce((acc, i) => acc + (parseFloat(i.custo_total) || 0), 0);
+    const totalVenda = itens.reduce((acc, i) => acc + (parseFloat(i.venda_total) || 0), 0);
+    const totalFrete = itens.reduce((acc, i) => acc + (parseFloat(i.frete) || 0), 0);
+    const totalLucroBruto = itens.reduce((acc, i) => acc + (parseFloat(i.lucro_bruto) || 0), 0);
+    const elCusto = document.getElementById('totalCusto');
+    const elVenda = document.getElementById('totalVenda');
+    const elFrete = document.getElementById('totalFrete');
+    const elLucro = document.getElementById('totalLucroBruto');
+    if (elCusto) elCusto.textContent = formatMoney(totalCusto);
+    if (elVenda) elVenda.textContent = formatMoney(totalVenda);
+    if (elFrete) elFrete.textContent = formatMoney(totalFrete);
+    if (elLucro) elLucro.textContent = formatMoney(totalLucroBruto);
 }
 
 function formatMoney(value) {
-    if (value == null || value === '') return 'R$ 0,00';
+    if (value === undefined || value === null) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
 function adicionarItem() {
     editingItemId = null;
     document.getElementById('itemModalTitle').textContent = 'Adicionar Item';
-    const proximoNum = itens.length > 0 ? Math.max(...itens.map(i => i.numero || 0)) + 1 : 1;
-    document.getElementById('itemNumero').value        = proximoNum;
-    document.getElementById('itemDescricao').value     = '';
-    document.getElementById('itemQuantidade').value    = '';
-    document.getElementById('itemUnidade').value       = 'UN';
-    document.getElementById('itemMarca').value         = '';
-    document.getElementById('itemModelo').value        = '';
-    document.getElementById('itemPrazoEntrega').value  = '';
-    document.getElementById('itemFrete').value         = '';
+    const proximoNum = itens.length > 0
+        ? Math.max(...itens.map(i => i.numero || 0)) + 1
+        : 1;
+    document.getElementById('itemNumero').value = proximoNum;
+    document.getElementById('itemDescricao').value = '';
+    document.getElementById('itemQuantidade').value = '';
+    document.getElementById('itemUnidade').value = 'UN';
+    document.getElementById('itemMarca').value = '';
+    document.getElementById('itemModelo').value = '';
+    document.getElementById('itemPrazoEntrega').value = '';
+    document.getElementById('itemFrete').value = '';
     document.getElementById('itemCustoUnitario').value = '';
     document.getElementById('itemVendaUnitario').value = '';
     recalcularItemTotais();
@@ -679,16 +693,16 @@ function abrirEdicaoItem(itemId) {
     if (!item) return;
     editingItemId = item.id;
     document.getElementById('itemModalTitle').textContent = 'Editar Item';
-    document.getElementById('itemNumero').value        = item.numero        || '';
-    document.getElementById('itemDescricao').value     = item.descricao     || '';
-    document.getElementById('itemQuantidade').value    = item.quantidade    || '';
-    document.getElementById('itemUnidade').value       = item.unidade       || 'UN';
-    document.getElementById('itemMarca').value         = item.marca         || '';
-    document.getElementById('itemModelo').value        = item.modelo        || '';
-    document.getElementById('itemPrazoEntrega').value  = item.prazo_entrega || '';
-    document.getElementById('itemFrete').value         = item.frete         || '';
-    document.getElementById('itemCustoUnitario').value = item.custo_unitario|| '';
-    document.getElementById('itemVendaUnitario').value = item.venda_unitario|| '';
+    document.getElementById('itemNumero').value = item.numero || '';
+    document.getElementById('itemDescricao').value = item.descricao || '';
+    document.getElementById('itemQuantidade').value = item.quantidade || '';
+    document.getElementById('itemUnidade').value = item.unidade || 'UN';
+    document.getElementById('itemMarca').value = item.marca || '';
+    document.getElementById('itemModelo').value = item.modelo || '';
+    document.getElementById('itemPrazoEntrega').value = item.prazo_entrega || '';
+    document.getElementById('itemFrete').value = item.frete || '';
+    document.getElementById('itemCustoUnitario').value = item.custo_unitario || '';
+    document.getElementById('itemVendaUnitario').value = item.venda_unitario || '';
     recalcularItemTotais();
     switchItemTab('item-tab-geral');
     document.getElementById('itemModal').classList.add('show');
@@ -701,48 +715,52 @@ function fecharItemModal() {
 }
 
 function recalcularItemTotais() {
-    const qtd       = parseFloat(document.getElementById('itemQuantidade')?.value)    || 0;
+    const qtd = parseFloat(document.getElementById('itemQuantidade')?.value) || 0;
     const custoUnit = parseFloat(document.getElementById('itemCustoUnitario')?.value) || 0;
     const vendaUnit = parseFloat(document.getElementById('itemVendaUnitario')?.value) || 0;
-    const frete     = parseFloat(document.getElementById('itemFrete')?.value)         || 0;
-
-    const custoTotal  = qtd * custoUnit;
-    const vendaTotal  = qtd * vendaUnit;
-    const lucroBruto  = vendaTotal - custoTotal - frete; // frete desconta do lucro
-
-    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = formatMoney(val); };
-    set('itemCustoTotal',   custoTotal);
-    set('itemVendaTotal',   vendaTotal);
-    set('itemFreteDisplay', frete);
-    set('itemLucroBruto',   lucroBruto);
+    const frete = parseFloat(document.getElementById('itemFrete')?.value) || 0;
+    const custoTotal = qtd * custoUnit;
+    const vendaTotal = qtd * vendaUnit;
+    const lucroBruto = vendaTotal - custoTotal - frete;
+    const elCT = document.getElementById('itemCustoTotal');
+    const elVT = document.getElementById('itemVendaTotal');
+    const elLB = document.getElementById('itemLucroBruto');
+    if (elCT) elCT.value = formatMoney(custoTotal);
+    if (elVT) elVT.value = formatMoney(vendaTotal);
+    if (elLB) elLB.value = formatMoney(lucroBruto);
 }
 
 async function salvarItem() {
     const itemData = {
-        numero:         parseInt(document.getElementById('itemNumero').value),
-        descricao:      document.getElementById('itemDescricao').value.trim(),
-        quantidade:     parseFloat(document.getElementById('itemQuantidade').value),
-        unidade:        document.getElementById('itemUnidade').value.trim(),
-        marca:          document.getElementById('itemMarca').value.trim(),
-        modelo:         document.getElementById('itemModelo').value.trim(),
+        numero: parseInt(document.getElementById('itemNumero').value),  // ✅ era numero_item
+        descricao: document.getElementById('itemDescricao').value.trim(),
+        quantidade: parseFloat(document.getElementById('itemQuantidade').value),
+        unidade: document.getElementById('itemUnidade').value.trim(),
+        marca: document.getElementById('itemMarca').value.trim(),
+        modelo: document.getElementById('itemModelo').value.trim(),
         custo_unitario: parseFloat(document.getElementById('itemCustoUnitario').value) || 0,
         venda_unitario: parseFloat(document.getElementById('itemVendaUnitario').value) || 0,
-        prazo_entrega:  document.getElementById('itemPrazoEntrega').value.trim(),
-        frete:          parseFloat(document.getElementById('itemFrete').value) || 0,
+        prazo_entrega: document.getElementById('itemPrazoEntrega').value.trim(),
+        frete: parseFloat(document.getElementById('itemFrete').value) || 0
     };
     if (!itemData.descricao || isNaN(itemData.quantidade) || itemData.quantidade <= 0) {
-        showToast('Descrição e quantidade são obrigatórios', 'error'); return;
+        showToast('Descrição e quantidade são obrigatórios', 'error');
+        return;
     }
-    itemData.custo_total  = itemData.custo_unitario * itemData.quantidade;
-    itemData.venda_total  = itemData.venda_unitario * itemData.quantidade;
-    itemData.lucro_bruto  = itemData.venda_total - itemData.custo_total - itemData.frete;
+    itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
+    itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
+    itemData.lucro_bruto = itemData.venda_total - itemData.custo_total - (itemData.frete || 0);
 
     if (!isOnline) { showToast('Sistema offline', 'error'); return; }
     try {
-        const url    = editingItemId
-            ? `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${editingItemId}`
-            : `${API_URL}/licitacoes/${currentLicitacaoId}/itens`;
-        const method = editingItemId ? 'PUT' : 'POST';
+        let url, method;
+        if (editingItemId) {
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens/${editingItemId}`;
+            method = 'PUT';
+        } else {
+            url = `${API_URL}/licitacoes/${currentLicitacaoId}/itens`;
+            method = 'POST';
+        }
         const res = await fetch(url, {
             method,
             headers: { 'Content-Type': 'application/json', ...getHeaders() },
@@ -754,8 +772,8 @@ async function salvarItem() {
         if (method === 'POST') {
             itens.push(saved);
         } else {
-            const idx = itens.findIndex(i => i.id === saved.id);
-            if (idx !== -1) itens[idx] = saved;
+            const index = itens.findIndex(i => i.id === saved.id);
+            if (index !== -1) itens[index] = saved;
         }
         fecharItemModal();
         renderItens();
@@ -777,37 +795,71 @@ function syncItens() {
 function switchItemTab(tabId) {
     const modal = document.getElementById('itemModal');
     if (!modal) return;
-    modal.querySelectorAll('.tab-btn').forEach(b  => b.classList.remove('active'));
+    modal.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     modal.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    const btn = modal.querySelector(`.tab-btn[onclick*="${tabId}"]`);
-    if (btn) btn.classList.add('active');
-    const content = document.getElementById(tabId);
-    if (content) content.classList.add('active');
+    const activeBtn = modal.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    const activeContent = document.getElementById(tabId);
+    if (activeContent) activeContent.classList.add('active');
 }
 
 // ========== COTAÇÃO ==========
 function saudacao() {
     const h = new Date().getHours();
-    if (h >= 5  && h < 12) return 'Bom dia';
+    if (h >= 5 && h < 12) return 'Bom dia';
     if (h >= 12 && h < 18) return 'Boa tarde';
     return 'Boa noite';
 }
 
-function abrirModalCotacao() {
-    if (!itens.length) { showToast('Nenhum item cadastrado nesta proposta', 'error'); return; }
-    const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))].sort();
-    if (!marcas.length) { showToast('Nenhum item possui marca cadastrada', 'error'); return; }
+function gerarMensagemCotacao(tipo) {
+    const linhas = itens
+        .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
+        .map((item, idx) => {
+            const campo = tipo === 'modelo'
+                ? (item.modelo || item.descricao || '')
+                : (item.descricao || '');
+            const unidade = item.unidade ? ` ${item.unidade}` : '';
+            return `${idx + 1} - ${campo}\nQuantidade: ${item.quantidade}${unidade}`;
+        });
+    if (!linhas.length) return '';
+    return `${saudacao()}!\nGostaria de pedir, por gentileza, um orçamento para:\n\n${linhas.join('\n\n')}`;
+}
 
+function atualizarPreviewCotacao() {
+    const tipo = document.querySelector('input[name="cotacaoTipo"]:checked')?.value || 'descricao';
+    const preview = document.getElementById('cotacaoPreview');
+    if (preview) preview.value = gerarMensagemCotacao(tipo);
+}
+
+function abrirModalCotacao() {
+    if (!itens.length) {
+        showToast('Nenhum item cadastrado nesta proposta', 'error');
+        return;
+    }
+    const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))].sort();
+    if (!marcas.length) {
+        showToast('Nenhum item possui marca cadastrada', 'error');
+        return;
+    }
     const select = document.getElementById('cotacaoFornecedorSelect');
     if (!select) return;
     select.innerHTML = '<option value="">Selecione a marca...</option>' +
         marcas.map(m => `<option value="${m}">${m}</option>`).join('');
 
-    // Reseta tipo para descrição
-    cotacaoTipoAtual = 'descricao';
+    // Reset tipo para descrição
     selecionarTipoCotacao('descricao');
 
-    document.getElementById('modalCotacaoItens').classList.add('show');
+    const modal = document.getElementById('modalCotacaoItens');
+    if (modal) modal.classList.add('show');
+}
+
+function selecionarTipoCotacao(tipo) {
+    const hidden = document.getElementById('cotacaoTipoHidden');
+    if (hidden) hidden.value = tipo;
+    const cardDesc = document.getElementById('cotacaoCardDescricao');
+    const cardMod = document.getElementById('cotacaoCardModelo');
+    if (cardDesc) cardDesc.classList.toggle('active', tipo === 'descricao');
+    if (cardMod) cardMod.classList.toggle('active', tipo === 'modelo');
 }
 
 function fecharModalCotacao() {
@@ -817,29 +869,35 @@ function fecharModalCotacao() {
 
 async function enviarCotacao() {
     const marcaSelecionada = document.getElementById('cotacaoFornecedorSelect')?.value;
-    if (!marcaSelecionada) { showToast('Selecione uma marca/fornecedor', 'error'); return; }
+    if (!marcaSelecionada) {
+        showToast('Selecione uma marca/fornecedor', 'error');
+        return;
+    }
+    const tipo = document.getElementById('cotacaoTipoHidden')?.value || 'descricao';
 
-    const tipo = cotacaoTipoAtual;
     const itensDaMarca = itens.filter(i => (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase());
-
     const linhas = itensDaMarca
         .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
         .map((item, idx) => {
-            const campo   = tipo === 'modelo' ? (item.modelo || item.descricao || '') : (item.descricao || '');
+            const campo = tipo === 'modelo'
+                ? (item.modelo || item.descricao || '')
+                : (item.descricao || '');
             const unidade = item.unidade ? ` ${item.unidade}` : '';
             return `${idx + 1} - ${campo}\nQuantidade: ${item.quantidade}${unidade}`;
         });
 
-    if (!linhas.length) { showToast('Nenhum item com esta marca para cotar', 'error'); return; }
-
+    if (!linhas.length) {
+        showToast('Nenhum item com esta marca para cotar', 'error');
+        return;
+    }
     const mensagem = `${saudacao()}!\nGostaria de pedir, por gentileza, um orçamento para:\n\n${linhas.join('\n\n')}`;
 
     if (!isOnline) { showToast('Sistema offline', 'error'); return; }
 
-    const btn   = document.getElementById('btnEnviarCotacao');
+    const btn = document.getElementById('btnEnviarCotacao');
     const label = document.getElementById('btnEnviarCotacaoLabel');
-    if (btn)   btn.disabled       = true;
-    if (label) label.textContent  = 'Buscando...';
+    if (btn) btn.disabled = true;
+    if (label) label.textContent = 'Buscando...';
 
     try {
         const res = await fetch(`${API_URL}/fornecedores?search=${encodeURIComponent(marcaSelecionada)}&limit=20`, {
@@ -847,36 +905,59 @@ async function enviarCotacao() {
         });
         if (!res.ok) throw new Error('Erro ao buscar fornecedor');
         const resultado = await res.json();
-        const lista     = Array.isArray(resultado) ? resultado : (resultado.data || []);
-        const fornecedor = lista.find(f => f.nome.trim().toLowerCase() === marcaSelecionada.trim().toLowerCase());
+        const lista = Array.isArray(resultado) ? resultado : (resultado.data || []);
 
-        if (!fornecedor) { showToast('Fornecedor não encontrado', 'error'); return; }
+        const fornecedor = lista.find(f =>
+            f.nome.trim().toLowerCase() === marcaSelecionada.trim().toLowerCase()
+        );
 
-        const metodo     = fornecedor.metodo_envio || 'whatsapp';
+        if (!fornecedor) {
+            showToast('Fornecedor não encontrado', 'error');
+            return;
+        }
+
+        const metodo = fornecedor.metodo_envio || 'whatsapp';
         const msgEncoded = encodeURIComponent(mensagem);
 
-        // Marca itens da marca como cotados (azul)
-        itensDaMarca.forEach(i => itensCotados.add(i.id));
+        // Marca os itens da marca como cotado
+        for (const item of itensDaMarca) {
+            if (!item.cotado) {
+                try {
+                    await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}/itens/${item.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', ...getHeaders() },
+                        body: JSON.stringify({ ...item, cotado: true })
+                    });
+                    item.cotado = true;
+                } catch (e) { /* silent */ }
+            }
+        }
         renderItens();
-
-        fecharModalCotacao();
 
         if (metodo === 'whatsapp') {
             const celular = (fornecedor.celular || fornecedor.telefone || '').replace(/\D/g, '');
-            if (!celular) { showToast('Fornecedor sem número de WhatsApp cadastrado', 'error'); return; }
+            if (!celular) {
+                showToast('Fornecedor sem número de WhatsApp cadastrado', 'error');
+                return;
+            }
+            fecharModalCotacao();
             window.open(`https://wa.me/${celular}?text=${msgEncoded}`, '_blank');
         } else {
-            if (!fornecedor.email) { showToast('Fornecedor sem e-mail cadastrado', 'error'); return; }
+            if (!fornecedor.email) {
+                showToast('Fornecedor sem e-mail cadastrado', 'error');
+                return;
+            }
             const proposta = licitacoes.find(l => l.id === currentLicitacaoId);
-            const assunto  = encodeURIComponent(
-                `Solicitação de Orçamento${proposta ? ' — Proposta Nº ' + proposta.numero_proposta : ''}`
+            const assunto = encodeURIComponent(
+                `Solicitação de Orçamento${proposta ? ' - Proposta Nº ' + proposta.numero_proposta : ''}`
             );
+            fecharModalCotacao();
             window.location.href = `mailto:${fornecedor.email}?subject=${assunto}&body=${msgEncoded}`;
         }
     } catch (err) {
         showToast(err.message || 'Erro ao enviar cotação', 'error');
     } finally {
-        if (btn)   btn.disabled      = false;
+        if (btn) btn.disabled = false;
         if (label) label.textContent = 'Enviar';
     }
 }
@@ -885,42 +966,43 @@ async function enviarCotacao() {
 function showToast(msg, tipo = 'success') {
     document.querySelectorAll('.floating-message').forEach(m => m.remove());
     const d = document.createElement('div');
-    d.className  = `floating-message ${tipo}`;
+    d.className = `floating-message ${tipo}`;
     d.textContent = msg;
     document.body.appendChild(d);
     setTimeout(() => {
-        d.style.animation = 'slideOutBottom 0.22s ease forwards';
-        setTimeout(() => d.remove(), 220);
+        d.style.animation = 'slideOutBottom 0.3s ease forwards';
+        setTimeout(() => d.remove(), 300);
     }, 3000);
 }
 
 // ========== EXPOSIÇÃO GLOBAL ==========
-window.openFormModal          = openFormModal;
-window.closeFormModal         = closeFormModal;
-window.salvarLicitacao        = salvarLicitacao;
-window.editLicitacao          = editLicitacao;
-window.openDeleteModal        = openDeleteModal;
-window.closeDeleteModal       = closeDeleteModal;
-window.confirmarExclusao      = confirmarExclusao;
-window.filterLicitacoes       = filterLicitacoes;
-window.syncData               = syncData;
-window.changeMonth            = changeMonth;
-window.toggleCalendar         = toggleCalendar;
-window.viewLicitacao          = viewLicitacao;
-window.voltar                 = voltar;
-window.abrirModalVencidos     = abrirModalVencidos;
-window.fecharModalVencidos    = fecharModalVencidos;
-window.vencidosPageChange     = vencidosPageChange;
-window.adicionarItem          = adicionarItem;
-window.abrirEdicaoItem        = abrirEdicaoItem;
-window.salvarItem             = salvarItem;
-window.fecharItemModal        = fecharItemModal;
-window.filterItens            = filterItens;
-window.syncItens              = syncItens;
-window.abrirModalCotacao      = abrirModalCotacao;
-window.fecharModalCotacao     = fecharModalCotacao;
-window.enviarCotacao          = enviarCotacao;
-window.switchItemTab          = switchItemTab;
-window.toggleStatus           = toggleStatus;
-window.recalcularItemTotais   = recalcularItemTotais;
-window.selecionarTipoCotacao  = selecionarTipoCotacao;
+window.openFormModal = openFormModal;
+window.closeFormModal = closeFormModal;
+window.salvarLicitacao = salvarLicitacao;
+window.editLicitacao = editLicitacao;
+window.openDeleteModal = openDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmarExclusao = confirmarExclusao;
+window.filterLicitacoes = filterLicitacoes;
+window.syncData = syncData;
+window.changeMonth = changeMonth;
+window.toggleCalendar = toggleCalendar;
+window.viewLicitacao = viewLicitacao;
+window.voltar = voltar;
+window.abrirModalVencidos = abrirModalVencidos;
+window.fecharModalVencidos = fecharModalVencidos;
+window.vencidosPageChange = vencidosPageChange;
+window.adicionarItem = adicionarItem;
+window.abrirEdicaoItem = abrirEdicaoItem;
+window.salvarItem = salvarItem;
+window.fecharItemModal = fecharItemModal;
+window.filterItens = filterItens;
+window.syncItens = syncItens;
+window.abrirModalCotacao = abrirModalCotacao;
+window.fecharModalCotacao = fecharModalCotacao;
+window.enviarCotacao = enviarCotacao;
+window.atualizarPreviewCotacao = atualizarPreviewCotacao;
+window.selecionarTipoCotacao = selecionarTipoCotacao;
+window.switchItemTab = switchItemTab;
+window.toggleStatus = toggleStatus;
+window.recalcularItemTotais = recalcularItemTotais;
