@@ -408,7 +408,6 @@ function fecharModalAtencao() {
 function verificarAtencao() { updateStats(); }
 
 // ========== MENU DE CONTEXTO PARA PROPOSTAS ==========
-let contextPropostaId = null;
 
 function onPropostaContextMenu(e, id) {
     e.preventDefault();
