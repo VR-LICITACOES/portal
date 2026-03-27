@@ -153,7 +153,7 @@ button.secondary { background: #6B7280; color: white; }
 button.small { padding: 8px 12px; font-size: 0.85rem; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ÍCONES (botões transparentes) - usados na barra de busca e tela de itens */
+/* ÍCONES (botões transparentes) */
 .btn-icon {
     background: transparent;
     border: none;
@@ -262,7 +262,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     white-space: nowrap;
 }
 
-/* Ícones da barra de pesquisa: calendário, +, sync */
+/* Ícones da barra de pesquisa */
 .calendar-btn {
     background: transparent;
     border: none;
@@ -280,7 +280,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     color: var(--primary);
 }
 
-/* CALENDAR MODAL (dias do mês) */
+/* CALENDAR MODAL */
 .calendar-modal {
     display: none;
     position: fixed;
@@ -358,15 +358,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .calendar-day.empty { background: transparent; cursor: default; }
 .calendar-day.has-record { background: var(--primary); color: white; }
 .calendar-day.has-record:hover { background: #d94010; transform: scale(1.05); }
-/* Dia selecionado como filtro ativo */
 .calendar-day.selected-day {
     outline: 3px solid var(--primary);
     outline-offset: 2px;
     font-weight: 700;
 }
-/* Dia de hoje (sem filtro ativo) */
 .calendar-day.today { border: 2px solid var(--primary); font-weight: bold; }
-/* Dia de hoje E selecionado */
 .calendar-day.today.selected-day {
     border: 2px solid var(--primary);
     outline: 3px solid var(--primary);
@@ -389,12 +386,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     display: flex;
     align-items: center;
     gap: 1rem;
-    /* sem cursor pointer e sem hover animado por padrão */
     cursor: default;
     user-select: none;
     -webkit-user-select: none;
 }
-/* Apenas o card de urgente é clicável */
 #prazoVencidoCard {
     cursor: pointer;
 }
@@ -402,7 +397,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-/* Classe utilitária para garantir não-selecionável */
 .no-select {
     user-select: none;
     -webkit-user-select: none;
@@ -512,15 +506,15 @@ tbody tr.row-enviada:hover {
     background: rgba(34, 197, 94, 0.2) !important;
 }
 
-/* Linha com item cotado — fundo azul suave */
+/* Linha com item cotado — azul moderadamente escuro para boa visibilidade */
 tbody tr.row-cotado {
-    background: rgba(59, 130, 246, 0.10) !important;
+    background: rgba(59, 130, 246, 0.22) !important;
 }
 tbody tr.row-cotado:nth-child(even) {
-    background: rgba(59, 130, 246, 0.15) !important;
+    background: rgba(59, 130, 246, 0.30) !important;
 }
 tbody tr.row-cotado:hover {
-    background: rgba(59, 130, 246, 0.2) !important;
+    background: rgba(59, 130, 246, 0.38) !important;
 }
 
 /* Status badge centralizado na coluna */
@@ -673,7 +667,7 @@ td.status-col {
     font-weight: 600;
 }
 
-/* FORMULÁRIOS E TABELAS DE ITENS */
+/* FORMULÁRIOS */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -717,7 +711,7 @@ input:focus, select:focus, textarea:focus {
     letter-spacing: 0.01em;
 }
 
-/* TOTAIS (barra abaixo da tabela) */
+/* TOTAIS */
 .totals-bar {
     background: transparent;
     border: none;
@@ -728,7 +722,7 @@ input:focus, select:focus, textarea:focus {
     font-size: 0.9rem;
 }
 
-/* CHECKBOX ESTILIZADO (apenas na tabela principal) */
+/* CHECKBOX ESTILIZADO */
 .checkbox-wrapper {
     display: inline-flex;
     align-items: center;
@@ -902,6 +896,45 @@ input:focus, select:focus, textarea:focus {
 .cotacao-tipo-card svg {
     stroke: currentColor;
 }
+
+/* ============================================
+   MENU DE CONTEXTO (CLIQUE DIREITO)
+   ============================================ */
+#itemContextMenu {
+    position: fixed;
+    z-index: 999999;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px var(--shadow);
+    min-width: 160px;
+    padding: 4px 0;
+    animation: scaleIn 0.12s ease;
+    transform-origin: top left;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.15s ease;
+    user-select: none;
+}
+.context-menu-item:hover {
+    background: var(--table-stripe);
+}
+.context-menu-item.danger {
+    color: var(--btn-delete);
+}
+.context-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.08);
+}
+
 @media (max-width: 768px) {
     .container { padding: 0 1rem 5rem 1rem; margin: 1rem auto; }
     .header { flex-direction: column; align-items: stretch; }
