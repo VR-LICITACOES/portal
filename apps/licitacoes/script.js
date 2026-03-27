@@ -693,11 +693,14 @@ function renderItens() {
         // Linha azul se tem link no modelo OU se está cotado
         const rowClass = (temLink || item.cotado) ? 'row-cotado' : '';
 
-        // Célula do modelo
+        // Célula do modelo: apenas ícone clicável se for link, sem texto
         const modeloCell = temLink
-            ? `<a class="link-cell" href="${escapeHtml(normalizeUrl(modeloValue))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
-                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                   __LINK__
+            ? `<a href="${escapeHtml(normalizeUrl(modeloValue))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="modelo-link-icon">
+                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                       <polyline points="15 3 21 3 21 9"/>
+                       <line x1="10" y1="14" x2="21" y2="3"/>
+                   </svg>
                </a>`
             : escapeHtml(modeloValue);
 
@@ -716,7 +719,7 @@ function renderItens() {
             <td class="col-money">${formatMoney(item.custo_total)}</td>
             <td class="col-money">${formatMoney(item.venda_unitario)}</td>
             <td class="col-money">${formatMoney(item.venda_total)}</td>
-        </tr>`;
+         </tr>`;
     }).join('');
 }
 
