@@ -3,81 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Licitações - I.R. Comércio</title>
+    <title>Licitações — I.R. Comércio</title>
     <link rel="icon" type="image/png" href="I.R.-COMERCIO-E-MATERIAIS-ELETRICOS-PRETO.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="app-content">
-        <div class="container" id="mainContainer">
-            <!-- Header -->
-            <div class="header">
-                <div class="header-left">
-                    <h1>Licitações</h1>
-                    <div id="connectionStatus" class="connection-status offline"><span class="status-dot"></span></div>
+<div class="app-content">
+    <div class="container" id="mainContainer">
+
+        <!-- ── HEADER ───────────────────────────────── -->
+        <div class="header">
+            <div class="header-left">
+                <h1>Licitações</h1>
+                <div id="connectionStatus" class="connection-status offline">
+                    <span class="status-dot"></span>
                 </div>
-                <!-- Header right: empty, buttons moved to search bar -->
-                <div></div>
             </div>
+            <div></div>
+        </div>
 
-            <!-- Dashboard cards -->
-            <div class="dashboard-grid">
-                <div class="stat-card no-select"><div class="stat-icon stat-icon-default"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div><div class="stat-content"><div class="stat-value" id="totalLicitacoes">0</div><div class="stat-label">Licitações</div></div></div>
-                <div class="stat-card no-select"><div class="stat-icon stat-icon-success"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></div><div class="stat-content"><div class="stat-value stat-value-success" id="totalEnviadas">0</div><div class="stat-label">Enviadas</div></div></div>
-                <div class="stat-card no-select" id="prazoVencidoCard" onclick="abrirModalVencidos()"><div class="stat-icon stat-icon-danger"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><div class="stat-content"><div class="stat-value stat-value-danger" id="totalVencidas">0</div><div class="stat-label">Urgente</div></div></div>
-                <div class="stat-card no-select"><div class="stat-icon stat-icon-warning-light"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div><div class="stat-content"><div class="stat-value stat-value-warning" id="totalAbertas">0</div><div class="stat-label">Pendentes</div></div></div>
-            </div>
-
-            <!-- Search bar + filters -->
-            <div class="search-bar-wrapper">
-                <div class="search-bar">
-                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-                    <input type="text" id="search" placeholder="Pesquisar por número ou UF" oninput="filterLicitacoes()">
-                    <div class="search-bar-filters">
-                        <div class="filter-dropdown-inline">
-                            <select id="filterStatus" onchange="filterLicitacoes()"><option value="">Todos os Status</option><option value="ABERTA">ABERTA</option><option value="ENVIADA">ENVIADA</option></select>
-                            <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </div>
-                        <div class="month-navigation-inline">
-                            <button onclick="changeMonth(-1)" class="month-nav-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                            <div class="month-display-inline"><span id="currentMonth">Carregando...</span></div>
-                            <button onclick="changeMonth(1)" class="month-nav-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-                        </div>
-                    </div>
-                    <!-- Icon buttons: calendar, add, sync -->
-                    <button class="calendar-btn" onclick="toggleCalendar()" title="Calendário"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
-                    <button class="calendar-btn" onclick="openFormModal()" title="Nova Proposta"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
-                    <button class="calendar-btn" onclick="syncData()" title="Sincronizar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg></button>
+        <!-- ── DASHBOARD ─────────────────────────────── -->
+        <div class="dashboard-grid">
+            <div class="stat-card no-select">
+                <div class="stat-icon stat-icon-default">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="totalLicitacoes">0</div>
+                    <div class="stat-label">Licitações</div>
                 </div>
             </div>
 
-            <!-- Calendar modal -->
-            <div class="calendar-modal" id="calendarModal"><div class="calendar-content"><div class="calendar-header"><button onclick="changeCalendarMonth(-1)" class="calendar-year-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button><h3 id="calendarMonthYear">Carregando...</h3><button onclick="changeCalendarMonth(1)" class="calendar-year-nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div><div class="calendar-weekdays"><div class="calendar-weekday">D</div><div class="calendar-weekday">S</div><div class="calendar-weekday">T</div><div class="calendar-weekday">Q</div><div class="calendar-weekday">Q</div><div class="calendar-weekday">S</div><div class="calendar-weekday">S</div></div><div class="calendar-days-grid" id="calendarDays"></div></div></div>
+            <div class="stat-card no-select">
+                <div class="stat-icon stat-icon-success">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value stat-value-success" id="totalEnviadas">0</div>
+                    <div class="stat-label">Enviadas</div>
+                </div>
+            </div>
 
-            <!-- Prazo vencido modal -->
-            <div class="modal-overlay" id="modalVencidos"><div class="modal-content" style="max-width:700px"><div class="modal-header"><h3 class="modal-title">⚠️ Propostas com vencimento hoje</h3><button class="close-modal" onclick="fecharModalVencidos()">✕</button></div><div style="overflow-x:auto"><table style="width:100%"><thead><th>Nº Proposta</th><th>Data</th><th>Hora</th></thead><tbody id="vencidosTableBody"></tbody> </table></div><div id="vencidosPaginacao" class="paginacao-wrapper" style="margin-top:1rem"></div><div class="modal-actions"><button class="danger" onclick="fecharModalVencidos()">Fechar</button></div></div></div>
+            <div class="stat-card no-select" id="prazoVencidoCard" onclick="abrirModalVencidos()">
+                <div class="stat-icon stat-icon-danger">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value stat-value-danger" id="totalVencidas">0</div>
+                    <div class="stat-label">Atenção</div>
+                </div>
+            </div>
 
-            <!-- Form proposta modal -->
-            <div class="modal-overlay" id="formModal"><div class="modal-content"><div class="modal-header"><h3 class="modal-title" id="formTitle">Nova Proposta</h3><button class="close-modal" onclick="closeFormModal(true)">✕</button></div><div class="form-grid"><div class="form-group"><label>Nº Proposta *</label><input type="text" id="numeroProposta" required></div><div class="form-group"><label>Data *</label><input type="date" id="dataProposta" required></div><div class="form-group"><label>Hora</label><input type="time" id="horaProposta"></div><div class="form-group"><label>Local de Entrega (UF)</label><select id="ufProposta"><option value="">SELECIONE</option><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></div></div><div class="modal-actions"><button type="button" onclick="salvarLicitacao()" class="success">Salvar</button><button type="button" onclick="closeFormModal(true)" class="danger">Cancelar</button></div></div></div>
-
-            <!-- Delete modal -->
-            <div class="modal-overlay" id="deleteModal"><div class="modal-content modal-delete"><button class="close-modal" onclick="closeDeleteModal()">✕</button><div class="modal-message-delete">Deseja realmente excluir esta proposta?</div><div class="modal-actions modal-actions-no-border"><button class="success" onclick="closeDeleteModal()">Cancelar</button><button class="danger" onclick="confirmarExclusao()">Sim</button></div></div></div>
-
-            <!-- Tabela principal -->
-            <div class="card table-card">
-                <div style="overflow-x:auto">
-                    <table style="min-width:800px">
-                        <thead><tr><th style="width:40px;text-align:center"><span style="font-size:1.1rem">✓</span></th><th>Nº Proposta</th><th>Data</th><th>Hora</th><th>UF</th><th>Status</th><th style="text-align:center">Ações</th></tr></thead>
-                        <tbody id="licitacoesContainer"></tbody>
-                    </table>
+            <div class="stat-card no-select">
+                <div class="stat-icon stat-icon-warning-light">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value stat-value-warning" id="totalAbertas">0</div>
+                    <div class="stat-label">Pendentes</div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="telaItens" style="display:none"></div>
+        <!-- ── SEARCH BAR ─────────────────────────────── -->
+        <div class="search-bar-wrapper">
+            <div class="search-bar">
+                <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input type="text" id="search" placeholder="Pesquisar por número ou UF" oninput="filterLicitacoes()">
 
-    <script src="calendar.js"></script>
-    <script src="script.js"></script>
+                <div class="search-bar-filters">
+                    <div class="filter-dropdown-inline">
+                        <select id="filterStatus" onchange="filterLicitacoes()">
+                            <option value="">Todos os Status</option>
+                            <option value="ABERTA">ABERTA</option>
+                            <option value="ENVIADA">ENVIADA</option>
+                        </select>
+                        <svg class="dropdown-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+
+                    <div class="month-navigation-inline">
+                        <button onclick="changeMonth(-1)" class="month-nav-arrow">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <div class="month-display-inline"><span id="currentMonth">Carregando...</span></div>
+                        <button onclick="changeMonth(1)" class="month-nav-arrow">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="calendar-btn" onclick="toggleCalendar()" title="Calendário">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </button>
+                <button class="calendar-btn" onclick="openFormModal()" title="Nova Proposta">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <button class="calendar-btn" onclick="syncData()" title="Sincronizar">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- ── CALENDAR MODAL ─────────────────────────── -->
+        <div class="calendar-modal" id="calendarModal">
+            <div class="calendar-content">
+                <div class="calendar-header">
+                    <button onclick="changeCalendarMonth(-1)" class="calendar-year-nav">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <h3 id="calendarMonthYear">Carregando...</h3>
+                    <button onclick="changeCalendarMonth(1)" class="calendar-year-nav">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+                <div class="calendar-weekdays">
+                    <div class="calendar-weekday">D</div><div class="calendar-weekday">S</div>
+                    <div class="calendar-weekday">T</div><div class="calendar-weekday">Q</div>
+                    <div class="calendar-weekday">Q</div><div class="calendar-weekday">S</div>
+                    <div class="calendar-weekday">S</div>
+                </div>
+                <div class="calendar-days-grid" id="calendarDays"></div>
+            </div>
+        </div>
+
+        <!-- ── MODAL: PROPOSTAS VENCENDO HOJE ─────────── -->
+        <div class="modal-overlay" id="modalVencidos">
+            <div class="modal-content" style="max-width:680px">
+                <div class="modal-header">
+                    <h3 class="modal-title">⚠️ Propostas com vencimento hoje</h3>
+                    <button class="close-modal" onclick="fecharModalVencidos()">✕</button>
+                </div>
+                <div style="overflow-x:auto">
+                    <table style="width:100%">
+                        <thead><tr><th>Nº Proposta</th><th>Data</th><th>Hora</th></tr></thead>
+                        <tbody id="vencidosTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="vencidosPaginacao" class="paginacao-wrapper" style="margin-top:1rem"></div>
+                <div class="modal-actions">
+                    <button class="danger" onclick="fecharModalVencidos()">Fechar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MODAL: FORM PROPOSTA ───────────────────── -->
+        <div class="modal-overlay" id="formModal">
+            <div class="modal-content" style="max-width:620px">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="formTitle">Nova Proposta</h3>
+                    <button class="close-modal" onclick="closeFormModal(true)">✕</button>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Nº Proposta *</label><input type="text" id="numeroProposta" required></div>
+                    <div class="form-group"><label>Data *</label><input type="date" id="dataProposta" required></div>
+                    <div class="form-group"><label>Hora</label><input type="time" id="horaProposta"></div>
+                    <div class="form-group">
+                        <label>Local de Entrega (UF)</label>
+                        <select id="ufProposta">
+                            <option value="">SELECIONE</option>
+                            <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+                            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                            <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+                            <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+                            <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+                            <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+                            <option>SP</option><option>SE</option><option>TO</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="salvarLicitacao()" class="success">Salvar</button>
+                    <button type="button" onclick="closeFormModal(true)" class="danger">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MODAL: CONFIRMAR EXCLUSÃO ─────────────── -->
+        <div class="modal-overlay" id="deleteModal">
+            <div class="modal-content modal-delete">
+                <button class="close-modal" onclick="closeDeleteModal()">✕</button>
+                <div class="modal-message-delete">Deseja realmente excluir esta proposta?</div>
+                <div class="modal-actions modal-actions-no-border">
+                    <button class="success" onclick="closeDeleteModal()">Cancelar</button>
+                    <button class="danger"  onclick="confirmarExclusao()">Excluir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── TABELA PRINCIPAL ───────────────────────── -->
+        <div class="card table-card">
+            <div style="overflow-x:auto">
+                <table style="min-width:780px">
+                    <thead>
+                        <tr>
+                            <th style="width:46px; text-align:center">✓</th>
+                            <th>Nº Proposta</th>
+                            <th>Data</th>
+                            <th>Hora</th>
+                            <th>UF</th>
+                            <th class="col-status" style="text-align:center; min-width:120px;">Status</th>
+                            <th style="text-align:center; min-width:160px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licitacoesContainer"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /#mainContainer -->
+</div><!-- /.app-content -->
+
+<div id="telaItens" style="display:none"></div>
+
+<script src="calendar.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
