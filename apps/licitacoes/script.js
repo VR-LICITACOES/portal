@@ -14,9 +14,10 @@ let consecutive401Count = 0;
 const MAX_401_BEFORE_LOGOUT = 3;
 let currentMonth = new Date();
 let currentFetchController = null;
-let vencidosPage = 1;
-const VENCIDOS_PAGE_SIZE = 3;
+let atencaoPage = 1;
+const ATENCAO_PAGE_SIZE = 3;
 let currentDateFilter = null;
+let contextPropostaId = null; // para o menu de contexto de propostas
 
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
@@ -27,7 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     checkServerStatus();
     setInterval(checkServerStatus, 15000);
     setInterval(() => { if (isOnline) loadLicitacoes(); }, 30000);
-    setInterval(verificarPrazosVencidos, 60000);
+    setInterval(verificarAtencao, 60000);
+    // Solicitar permissão para notificações
+    if ('Notification' in window && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
 });
 
 // ========== AUTENTICAÇÃO ==========
@@ -136,7 +141,7 @@ async function loadLicitacoes() {
         if (!res.ok) return;
         licitacoes = await res.json();
         updateDisplay();
-        verificarPrazosVencidos();
+        verificarAtencao();
     } catch (err) {
         if (err.name !== 'AbortError') console.error('Erro ao carregar licitações:', err);
     } finally {
@@ -152,16 +157,17 @@ function updateDisplay() {
 function updateStats() {
     const total = licitacoes.length;
     const enviadas = licitacoes.filter(l => l.status === 'ENVIADA').length;
-    const abertas = licitacoes.filter(l => l.status === 'ABERTA').length;
+    const pendentes = licitacoes.filter(l => l.status === 'ABERTA').length;
     const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje).length;
+    // Atenção: propostas com data <= hoje (vencidas ou vence hoje) e status ABERTA
+    const atencao = licitacoes.filter(l => l.status === 'ABERTA' && l.data <= hoje).length;
     document.getElementById('totalLicitacoes').textContent = total;
     document.getElementById('totalEnviadas').textContent = enviadas;
-    document.getElementById('totalAbertas').textContent = abertas;
-    document.getElementById('totalVencidas').textContent = vencidas;
+    document.getElementById('totalPendentes').textContent = pendentes;
+    document.getElementById('totalAtencao').textContent = atencao;
 
-    const card = document.getElementById('prazoVencidoCard');
-    if (vencidas > 0) {
+    const card = document.getElementById('atencaoCard');
+    if (atencao > 0) {
         card.classList.add('has-alert');
         let badge = card.querySelector('.pulse-badge');
         if (!badge) {
@@ -169,11 +175,27 @@ function updateStats() {
             badge.className = 'pulse-badge';
             card.appendChild(badge);
         }
-        badge.textContent = vencidas;
+        badge.textContent = atencao;
+        // Notificação push
+        notificarAtencao(atencao);
     } else {
         card.classList.remove('has-alert');
         const badge = card.querySelector('.pulse-badge');
         if (badge) badge.remove();
+    }
+}
+
+function notificarAtencao(count) {
+    if (count === 0) return;
+    // Evita notificações repetidas a cada 60 segundos? Podemos usar um flag simples
+    if (!window._ultimaNotificacaoAtencao || (Date.now() - window._ultimaNotificacaoAtencao) > 60000) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`Atenção! ${count} proposta(s) vencida(s) ou vencendo hoje`, {
+                body: 'Clique para visualizar as propostas em atraso.',
+                icon: '/favicon.ico'
+            });
+            window._ultimaNotificacaoAtencao = Date.now();
+        }
     }
 }
 
@@ -201,13 +223,15 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '车把<td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => {
         const isEnviada = l.status === 'ENVIADA';
+        const statusExibicao = l.status === 'ABERTA' ? 'PENDENTE' : 'ENVIADA';
         return `
-        <tr class="${isEnviada ? 'row-enviada' : ''}">
+        <tr class="${isEnviada ? 'row-enviada' : ''}"
+            oncontextmenu="onPropostaContextMenu(event, '${l.id}')">
             <td style="text-align:center;" onclick="event.stopPropagation()">
                 <div class="checkbox-wrapper">
                     <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${isEnviada ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
@@ -219,11 +243,7 @@ function renderLicitacoes(lista) {
             <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')" class="status-col">
-                <span class="status-badge ${isEnviada ? 'success' : 'warning'}">${l.status}</span>
-            </td>
-            <td class="actions-cell" onclick="event.stopPropagation()">
-                <button class="action-btn edit" onclick="editLicitacao('${l.id}')">Editar</button>
-                <button class="action-btn delete" onclick="openDeleteModal('${l.id}')">Excluir</button>
+                <span class="status-badge ${isEnviada ? 'success' : 'warning'}">${statusExibicao}</span>
             </td>
         </tr>`;
     }).join('');
@@ -296,7 +316,7 @@ async function salvarLicitacao() {
         data: document.getElementById('dataProposta').value,
         hora: document.getElementById('horaProposta').value || null,
         uf: document.getElementById('ufProposta').value || null,
-        status: 'ABERTA'
+        status: 'ABERTA'  // sempre ABERTA internamente
     };
     if (!data.numero_proposta || !data.data) { showToast('Número e data são obrigatórios', 'error'); return; }
     if (!isOnline) { showToast('Sistema offline', 'error'); closeFormModal(false); return; }
@@ -344,48 +364,113 @@ async function confirmarExclusao() {
     } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ========== MODAL PRAZO VENCIDO ==========
-function abrirModalVencidos() {
+// ========== MODAL ATENÇÃO (antigo Vencidos) ==========
+function abrirModalAtencao() {
     const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
-    vencidosPage = 1;
-    renderVencidosModal(vencidas);
-    document.getElementById('modalVencidos').classList.add('show');
+    const atencao = licitacoes.filter(l => l.status === 'ABERTA' && l.data <= hoje);
+    atencaoPage = 1;
+    renderAtencaoModal(atencao);
+    document.getElementById('modalAtencao').classList.add('show');
 }
 
-function renderVencidosModal(vencidas) {
-    const start = (vencidosPage - 1) * VENCIDOS_PAGE_SIZE;
-    const pageData = vencidas.slice(start, start + VENCIDOS_PAGE_SIZE);
-    const totalPages = Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
-    const tbody = document.getElementById('vencidosTableBody');
+function renderAtencaoModal(atencao) {
+    const start = (atencaoPage - 1) * ATENCAO_PAGE_SIZE;
+    const pageData = atencao.slice(start, start + ATENCAO_PAGE_SIZE);
+    const totalPages = Math.ceil(atencao.length / ATENCAO_PAGE_SIZE);
+    const tbody = document.getElementById('atencaoTableBody');
     if (!tbody) return;
     tbody.innerHTML = pageData.length === 0
-        ? '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>'
-        : pageData.map(l => `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();"><td>${l.numero_proposta}</td><td>${formatDateToBR(l.data)}</td><td>${l.hora || '-'}</td></tr>`).join('');
-    const pagContainer = document.getElementById('vencidosPaginacao');
+        ? '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta em atenção</td></tr>'
+        : pageData.map(l => `<tr onclick="viewLicitacao('${l.id}'); fecharModalAtencao();"><td>${l.numero_proposta}</td><td>${formatDateToBR(l.data)}</td><td>${l.hora || '-'}</td></tr>`).join('');
+    const pagContainer = document.getElementById('atencaoPaginacao');
     if (pagContainer && totalPages > 1) {
         let h = '<div class="paginacao-btns">';
-        h += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage-1})" ${vencidosPage===1?'disabled':''}>‹</button>`;
-        for (let i = 1; i <= totalPages; i++) h += `<button class="pag-btn ${i===vencidosPage?'pag-btn-active':''}" onclick="vencidosPageChange(${i})">${i}</button>`;
-        h += `<button class="pag-btn" onclick="vencidosPageChange(${vencidosPage+1})" ${vencidosPage===totalPages?'disabled':''}>›</button></div>`;
+        h += `<button class="pag-btn" onclick="atencaoPageChange(${atencaoPage-1})" ${atencaoPage===1?'disabled':''}>‹</button>`;
+        for (let i = 1; i <= totalPages; i++) h += `<button class="pag-btn ${i===atencaoPage?'pag-btn-active':''}" onclick="atencaoPageChange(${i})">${i}</button>`;
+        h += `<button class="pag-btn" onclick="atencaoPageChange(${atencaoPage+1})" ${atencaoPage===totalPages?'disabled':''}>›</button></div>`;
         pagContainer.innerHTML = h;
     } else if (pagContainer) { pagContainer.innerHTML = ''; }
 }
 
-function vencidosPageChange(page) {
+function atencaoPageChange(page) {
     const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
-    if (page >= 1 && page <= Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE)) {
-        vencidosPage = page;
-        renderVencidosModal(vencidas);
+    const atencao = licitacoes.filter(l => l.status === 'ABERTA' && l.data <= hoje);
+    if (page >= 1 && page <= Math.ceil(atencao.length / ATENCAO_PAGE_SIZE)) {
+        atencaoPage = page;
+        renderAtencaoModal(atencao);
     }
 }
 
-function fecharModalVencidos() {
-    document.getElementById('modalVencidos').classList.remove('show');
+function fecharModalAtencao() {
+    document.getElementById('modalAtencao').classList.remove('show');
 }
 
-function verificarPrazosVencidos() { updateStats(); }
+function verificarAtencao() { updateStats(); }
+
+// ========== MENU DE CONTEXTO PARA PROPOSTAS ==========
+let contextPropostaId = null;
+
+function onPropostaContextMenu(e, id) {
+    e.preventDefault();
+    e.stopPropagation();
+    contextPropostaId = id;
+    const menu = createPropostaContextMenu();
+    const x = Math.min(e.clientX, window.innerWidth - 200);
+    const y = Math.min(e.clientY, window.innerHeight - 100);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+}
+
+function createPropostaContextMenu() {
+    const existing = document.getElementById('propostaContextMenu');
+    if (existing) existing.remove();
+    const menu = document.createElement('div');
+    menu.id = 'propostaContextMenu';
+    menu.innerHTML = `
+        <div class="context-menu-item" onclick="editarPropostaContextMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path>
+                <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon>
+            </svg>
+            Editar proposta
+        </div>
+        <div class="context-menu-item danger" onclick="excluirPropostaContextMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14H6L5 6"></path>
+                <path d="M10 11v6M14 11v6"></path>
+                <path d="M9 6V4h6v2"></path>
+            </svg>
+            Excluir proposta
+        </div>
+    `;
+    document.body.appendChild(menu);
+    setTimeout(() => {
+        document.addEventListener('click', closePropostaContextMenu, { once: true });
+        document.addEventListener('contextmenu', closePropostaContextMenu, { once: true });
+    }, 10);
+    return menu;
+}
+
+function closePropostaContextMenu() {
+    const menu = document.getElementById('propostaContextMenu');
+    if (menu) menu.remove();
+    contextPropostaId = null;
+}
+
+function editarPropostaContextMenu() {
+    if (contextPropostaId) {
+        editLicitacao(contextPropostaId);
+        closePropostaContextMenu();
+    }
+}
+
+function excluirPropostaContextMenu() {
+    if (contextPropostaId) {
+        openDeleteModal(contextPropostaId);
+        closePropostaContextMenu();
+    }
+}
 
 // ========== SYNC PRINCIPAL ==========
 function syncData() {
@@ -396,17 +481,11 @@ function syncData() {
 }
 
 // ========== HELPERS DE LINK ==========
-/**
- * Detecta se o valor do campo MODELO é um link (URL).
- */
 function isLink(value) {
     if (!value) return false;
     return /^https?:\/\//i.test(value.trim()) || /^www\./i.test(value.trim());
 }
 
-/**
- * Normaliza a URL para garantir que tenha protocolo.
- */
 function normalizeUrl(value) {
     if (!value) return '#';
     const v = value.trim();
@@ -499,7 +578,7 @@ function mostrarTelaItens() {
                 </div>
             </div>
 
-            <!-- TABELA DE ITENS — sem coluna FRETE -->
+            <!-- TABELA DE ITENS -->
             <div class="card table-card">
                 <div style="overflow-x:auto;">
                     <table style="min-width:700px;">
@@ -522,7 +601,7 @@ function mostrarTelaItens() {
                 </div>
             </div>
 
-            <!-- TOTAIS (inclui FRETE calculado no modal) -->
+            <!-- TOTAIS -->
             <div class="totals-bar">
                 <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
                 <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
@@ -531,7 +610,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- ===== MODAL: ADICIONAR / EDITAR ITEM ===== -->
+        <!-- MODAL: ADICIONAR / EDITAR ITEM (mesmo código) -->
         <div class="modal-overlay" id="itemModal">
             <div class="modal-content" style="max-width:900px">
                 <div class="modal-header">
@@ -586,7 +665,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- ===== MODAL: COTAÇÃO ===== -->
+        <!-- MODAL: COTAÇÃO (mesmo código) -->
         <div class="modal-overlay" id="modalCotacaoItens">
             <div class="modal-content" style="max-width:520px">
                 <div class="modal-header">
@@ -627,7 +706,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- ===== MODAL: EXCLUSÃO EM LOTE ===== -->
+        <!-- MODAL: EXCLUSÃO EM LOTE (mesmo código) -->
         <div class="modal-overlay" id="modalExclusaoLote">
             <div class="modal-content" style="max-width:440px">
                 <div class="modal-header">
@@ -690,10 +769,8 @@ function renderItens() {
         const modeloValue = item.modelo || '';
         const temLink = isLink(modeloValue);
 
-        // Linha azul se tem link no modelo OU se está cotado
         const rowClass = (temLink || item.cotado) ? 'row-cotado' : '';
 
-        // Célula do modelo: apenas ícone clicável se for link, sem texto
         const modeloCell = temLink
             ? `<a href="${escapeHtml(normalizeUrl(modeloValue))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="modelo-link-icon">
                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -889,21 +966,21 @@ function switchItemTab(tabId) {
     if (activeContent) activeContent.classList.add('active');
 }
 
-// ========== MENU DE CONTEXTO (CLIQUE DIREITO) ==========
+// ========== MENU DE CONTEXTO (ITENS) ==========
 let contextMenuItemId = null;
 
 function onItemContextMenu(e, itemId) {
     e.preventDefault();
     e.stopPropagation();
     contextMenuItemId = itemId;
-    const menu = createContextMenu();
+    const menu = createItemContextMenu();
     const x = Math.min(e.clientX, window.innerWidth - 180);
     const y = Math.min(e.clientY, window.innerHeight - 70);
     menu.style.left = x + 'px';
     menu.style.top = y + 'px';
 }
 
-function createContextMenu() {
+function createItemContextMenu() {
     const existing = document.getElementById('itemContextMenu');
     if (existing) existing.remove();
     const menu = document.createElement('div');
@@ -1060,7 +1137,7 @@ async function confirmarExclusaoLote() {
     }
 }
 
-// ========== COTAÇÃO ==========
+// ========== COTAÇÃO (não alterado) ==========
 function saudacao() {
     const h = new Date().getHours();
     if (h >= 5 && h < 12) return 'Bom dia';
@@ -1094,8 +1171,6 @@ function abrirModalCotacao() {
         return;
     }
 
-    // Filtra marcas que NÃO possuem todos os itens com LINK como modelo.
-    // Uma marca é excluída do select se TODOS os seus itens têm link no campo modelo.
     const marcasComItens = {};
     for (const item of itens) {
         const marca = (item.marca || '').trim();
@@ -1104,7 +1179,6 @@ function abrirModalCotacao() {
         marcasComItens[marca].push(item);
     }
 
-    // Marca só aparece se ao menos 1 item dela NÃO tem link no modelo
     const marcasDisponiveisSet = new Set();
     for (const [marca, itensDaMarca] of Object.entries(marcasComItens)) {
         const algumSemLink = itensDaMarca.some(i => !isLink(i.modelo || ''));
@@ -1151,7 +1225,6 @@ async function enviarCotacao() {
     }
     const tipo = document.getElementById('cotacaoTipoHidden')?.value || 'descricao';
 
-    // Apenas itens da marca que NÃO têm link como modelo
     const itensDaMarca = itens.filter(i =>
         (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase() &&
         !isLink(i.modelo || '')
@@ -1269,9 +1342,9 @@ window.changeMonth = changeMonth;
 window.toggleCalendar = toggleCalendar;
 window.viewLicitacao = viewLicitacao;
 window.voltar = voltar;
-window.abrirModalVencidos = abrirModalVencidos;
-window.fecharModalVencidos = fecharModalVencidos;
-window.vencidosPageChange = vencidosPageChange;
+window.abrirModalAtencao = abrirModalAtencao;
+window.fecharModalAtencao = fecharModalAtencao;
+window.atencaoPageChange = atencaoPageChange;
 window.adicionarItem = adicionarItem;
 window.abrirEdicaoItem = abrirEdicaoItem;
 window.salvarItem = salvarItem;
@@ -1292,3 +1365,6 @@ window.closeContextMenu = closeContextMenu;
 window.abrirModalExclusaoLote = abrirModalExclusaoLote;
 window.fecharModalExclusaoLote = fecharModalExclusaoLote;
 window.confirmarExclusaoLote = confirmarExclusaoLote;
+window.onPropostaContextMenu = onPropostaContextMenu;
+window.editarPropostaContextMenu = editarPropostaContextMenu;
+window.excluirPropostaContextMenu = excluirPropostaContextMenu;
