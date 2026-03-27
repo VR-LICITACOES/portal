@@ -11,7 +11,7 @@
     --border-color: #E5E7EB;
     --input-bg: #F9FAFB;
     --success-color: #22C55E;
-    --warning-color: #ffc107;
+    --warning-color: #f97316;   /* laranja do dashboard */
     --info-color: #3B82F6;
     --table-stripe: #FAFAFA;
     --table-hover: rgba(0, 0, 0, 0.02);
@@ -390,10 +390,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     user-select: none;
     -webkit-user-select: none;
 }
-#prazoVencidoCard {
+#atencaoCard {
     cursor: pointer;
 }
-#prazoVencidoCard:hover {
+#atencaoCard:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
@@ -522,6 +522,20 @@ td.status-col {
     text-align: center;
 }
 
+/* Badge de status - padrão (warning) agora laranja */
+.status-badge.warning {
+    background: rgba(249, 115, 22, 0.15);
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.4);
+}
+.status-badge.success {
+    background: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+    border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+/* ===== REMOVIDA A COLUNA AÇÕES ===== */
+/* As classes abaixo são mantidas para compatibilidade, mas não serão usadas */
 .actions-cell {
     white-space: nowrap;
     min-width: 200px;
@@ -538,26 +552,6 @@ td.status-col {
 }
 .action-btn.edit { background: var(--btn-edit); color: white; }
 .action-btn.delete { background: var(--btn-delete); color: white; }
-.status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-}
-.status-badge.success {
-    background: rgba(34, 197, 94, 0.15);
-    color: #16a34a;
-    border: 1px solid rgba(34, 197, 94, 0.4);
-}
-.status-badge.warning {
-    background: rgba(255, 193, 7, 0.15);
-    color: #e6a000;
-    border: 1px solid rgba(255, 193, 7, 0.4);
-}
 
 /* MODAIS GERAIS */
 .modal-overlay {
@@ -838,8 +832,8 @@ input:focus, select:focus, textarea:focus {
     to { opacity: 0; transform: translateY(100px); }
 }
 
-/* PAGINAÇÃO DO MODAL VENCIDOS */
-#vencidosPaginacao .paginacao-btns {
+/* PAGINAÇÃO DO MODAL VENCIDOS (agora modal ATENÇÃO) */
+#atencaoPaginacao .paginacao-btns {
     display: flex;
     align-items: center;
     gap: 0.3rem;
@@ -906,14 +900,14 @@ input:focus, select:focus, textarea:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: currentColor;      /* herda a cor do texto */
+    color: currentColor;
     text-decoration: none;
     cursor: pointer;
     transition: none;
 }
 .modelo-link-icon:hover {
     text-decoration: none;
-    color: currentColor;      /* sem mudança de cor */
+    color: currentColor;
 }
 .modelo-link-icon svg {
     width: 16px;
@@ -960,7 +954,7 @@ td:first-child, th:first-child {
 /* ============================================
    MENU DE CONTEXTO (CLIQUE DIREITO)
    ============================================ */
-#itemContextMenu {
+#propostaContextMenu, #itemContextMenu {
     position: fixed;
     z-index: 999999;
     background: var(--bg-card);
