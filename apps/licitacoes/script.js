@@ -395,6 +395,25 @@ function syncData() {
         .catch(() => showToast('Erro ao sincronizar', 'error'));
 }
 
+// ========== HELPERS DE LINK ==========
+/**
+ * Detecta se o valor do campo MODELO é um link (URL).
+ */
+function isLink(value) {
+    if (!value) return false;
+    return /^https?:\/\//i.test(value.trim()) || /^www\./i.test(value.trim());
+}
+
+/**
+ * Normaliza a URL para garantir que tenha protocolo.
+ */
+function normalizeUrl(value) {
+    if (!value) return '#';
+    const v = value.trim();
+    if (/^https?:\/\//i.test(v)) return v;
+    return 'https://' + v;
+}
+
 // ========== TELA DE ITENS ==========
 function viewLicitacao(id) {
     currentLicitacaoId = id;
@@ -480,23 +499,22 @@ function mostrarTelaItens() {
                 </div>
             </div>
 
-            <!-- TABELA DE ITENS -->
+            <!-- TABELA DE ITENS — sem coluna FRETE -->
             <div class="card table-card">
                 <div style="overflow-x:auto;">
-                    <table style="min-width:1000px;">
+                    <table style="min-width:700px;">
                         <thead>
                             <tr>
-                                <th>ITEM</th>
-                                <th style="min-width:250px;">DESCRIÇÃO</th>
-                                <th>QTD</th>
-                                <th>UND</th>
-                                <th>MARCA</th>
-                                <th>MODELO</th>
-                                <th>CUSTO UNT</th>
-                                <th>CUSTO TOTAL</th>
-                                <th>VENDA UNT</th>
-                                <th>VENDA TOTAL</th>
-                                <th>FRETE</th>
+                                <th style="width:48px;">ITEM</th>
+                                <th style="min-width:140px;">DESCRIÇÃO</th>
+                                <th style="width:60px;">QTD</th>
+                                <th style="width:54px;">UND</th>
+                                <th style="min-width:70px;">MARCA</th>
+                                <th style="min-width:80px;">MODELO</th>
+                                <th style="min-width:96px;">CUSTO UNT</th>
+                                <th style="min-width:96px;">CUSTO TOTAL</th>
+                                <th style="min-width:96px;">VENDA UNT</th>
+                                <th style="min-width:96px;">VENDA TOTAL</th>
                             </tr>
                         </thead>
                         <tbody id="itensContainer"></tbody>
@@ -504,7 +522,7 @@ function mostrarTelaItens() {
                 </div>
             </div>
 
-            <!-- TOTAIS -->
+            <!-- TOTAIS (inclui FRETE calculado no modal) -->
             <div class="totals-bar">
                 <span><strong>CUSTO TOTAL:</strong> <span id="totalCusto">R$ 0,00</span></span>
                 <span><strong>VENDA TOTAL:</strong> <span id="totalVenda">R$ 0,00</span></span>
@@ -539,13 +557,16 @@ function mostrarTelaItens() {
                                 </select>
                             </div>
                             <div class="form-group"><label>Marca</label><input type="text" id="itemMarca"></div>
-                            <div class="form-group"><label>Modelo</label><input type="text" id="itemModelo"></div>
+                            <div class="form-group">
+                                <label>Modelo <span style="font-size:0.78rem;color:var(--text-secondary);font-weight:400;">(ou cole um link)</span></label>
+                                <input type="text" id="itemModelo" placeholder="Modelo ou https://...">
+                            </div>
                         </div>
                     </div>
                     <div class="tab-content" id="item-tab-transporte">
                         <div class="form-grid">
                             <div class="form-group"><label>Prazo de Entrega</label><input type="text" id="itemPrazoEntrega"></div>
-                            <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete"></div>
+                            <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete" onchange="recalcularItemTotais()"></div>
                         </div>
                     </div>
                     <div class="tab-content" id="item-tab-valores">
@@ -649,7 +670,7 @@ async function carregarItens(licitacaoId) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -662,26 +683,51 @@ function renderItens() {
         (item.modelo || '').toLowerCase().includes(search)
     );
     if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
         return;
     }
-    tbody.innerHTML = filtered.map((item, idx) => `
+    tbody.innerHTML = filtered.map((item, idx) => {
+        const modeloValue = item.modelo || '';
+        const temLink = isLink(modeloValue);
+
+        // Linha azul se tem link no modelo OU se está cotado
+        const rowClass = (temLink || item.cotado) ? 'row-cotado' : '';
+
+        // Célula do modelo
+        const modeloCell = temLink
+            ? `<a class="link-cell" href="${escapeHtml(normalizeUrl(modeloValue))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">
+                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                   __LINK__
+               </a>`
+            : escapeHtml(modeloValue);
+
+        return `
         <tr onclick="abrirEdicaoItem('${item.id}')"
             oncontextmenu="onItemContextMenu(event, '${item.id}')"
             style="cursor:pointer;"
-            class="${item.cotado ? 'row-cotado' : ''}">
-            <td>${item.numero || idx+1}</td>
-            <td class="descricao-cell">${item.descricao || ''}</td>
-            <td>${item.quantidade || 0}</td>
-            <td>${item.unidade || ''}</td>
-            <td>${item.marca || ''}</td>
-            <td>${item.modelo || ''}</td>
-            <td>${formatMoney(item.custo_unitario)}</td>
-            <td>${formatMoney(item.custo_total)}</td>
-            <td>${formatMoney(item.venda_unitario)}</td>
-            <td>${formatMoney(item.venda_total)}</td>
-            <td>${formatMoney(item.frete)}</td>
-        </tr>`).join('');
+            class="${rowClass}">
+            <td class="col-num">${item.numero || idx+1}</td>
+            <td class="descricao-cell">${escapeHtml(item.descricao || '')}</td>
+            <td class="col-num">${item.quantidade || 0}</td>
+            <td class="col-num">${escapeHtml(item.unidade || '')}</td>
+            <td class="col-short">${escapeHtml(item.marca || '')}</td>
+            <td class="col-short">${modeloCell}</td>
+            <td class="col-money">${formatMoney(item.custo_unitario)}</td>
+            <td class="col-money">${formatMoney(item.custo_total)}</td>
+            <td class="col-money">${formatMoney(item.venda_unitario)}</td>
+            <td class="col-money">${formatMoney(item.venda_total)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function atualizarTotais() {
@@ -947,7 +993,6 @@ function parseIntervaloItens(texto) {
         }
     }
 
-    // Valida sequência estritamente crescente
     for (let i = 1; i < flat.length; i++) {
         if (flat[i] <= flat[i - 1]) return null;
     }
@@ -1045,11 +1090,31 @@ function abrirModalCotacao() {
         showToast('Nenhum item cadastrado nesta proposta', 'error');
         return;
     }
-    const marcas = [...new Set(itens.map(i => i.marca).filter(Boolean))].sort();
+
+    // Filtra marcas que NÃO possuem todos os itens com LINK como modelo.
+    // Uma marca é excluída do select se TODOS os seus itens têm link no campo modelo.
+    const marcasComItens = {};
+    for (const item of itens) {
+        const marca = (item.marca || '').trim();
+        if (!marca) continue;
+        if (!marcasComItens[marca]) marcasComItens[marca] = [];
+        marcasComItens[marca].push(item);
+    }
+
+    // Marca só aparece se ao menos 1 item dela NÃO tem link no modelo
+    const marcasDisponiveisSet = new Set();
+    for (const [marca, itensDaMarca] of Object.entries(marcasComItens)) {
+        const algumSemLink = itensDaMarca.some(i => !isLink(i.modelo || ''));
+        if (algumSemLink) marcasDisponiveisSet.add(marca);
+    }
+
+    const marcas = [...marcasDisponiveisSet].sort();
+
     if (!marcas.length) {
-        showToast('Nenhum item possui marca cadastrada', 'error');
+        showToast('Nenhuma marca disponível para cotação (todos os itens possuem link como modelo)', 'error');
         return;
     }
+
     const select = document.getElementById('cotacaoFornecedorSelect');
     if (!select) return;
     select.innerHTML = '<option value="">Selecione a marca...</option>' +
@@ -1083,7 +1148,12 @@ async function enviarCotacao() {
     }
     const tipo = document.getElementById('cotacaoTipoHidden')?.value || 'descricao';
 
-    const itensDaMarca = itens.filter(i => (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase());
+    // Apenas itens da marca que NÃO têm link como modelo
+    const itensDaMarca = itens.filter(i =>
+        (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase() &&
+        !isLink(i.modelo || '')
+    );
+
     const linhas = itensDaMarca
         .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
         .map((item, idx) => {
