@@ -407,6 +407,7 @@ function voltar() {
     document.getElementById('mainContainer').style.display = 'block';
     currentLicitacaoId = null;
     itens = [];
+    closeContextMenu();
 }
 
 function mostrarTelaItens() {
@@ -446,6 +447,14 @@ function mostrarTelaItens() {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button onclick="abrirModalExclusaoLote()" class="calendar-btn" title="Excluir itens por intervalo">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v6M14 11v6"></path>
+                                <path d="M9 6V4h6v2"></path>
                             </svg>
                         </button>
                         <button onclick="abrirModalCotacao()" class="calendar-btn" title="Enviar cotação">
@@ -596,6 +605,31 @@ function mostrarTelaItens() {
                 </div>
             </div>
         </div>
+
+        <!-- ===== MODAL: EXCLUSÃO EM LOTE ===== -->
+        <div class="modal-overlay" id="modalExclusaoLote">
+            <div class="modal-content" style="max-width:440px">
+                <div class="modal-header">
+                    <h3 class="modal-title">Excluir Itens</h3>
+                    <button class="close-modal" onclick="fecharModalExclusaoLote()">✕</button>
+                </div>
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                    <label>Números dos itens a excluir</label>
+                    <input type="text" id="inputIntervaloExclusao" placeholder="Ex: 1, 3-5, 7"
+                        oninput="document.getElementById('msgErroIntervalo').textContent=''"
+                        onkeydown="if(event.key==='Enter') confirmarExclusaoLote()">
+                    <p id="msgErroIntervalo" style="font-size:0.85rem;margin-top:6px;font-weight:600;min-height:20px;"></p>
+                </div>
+                <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;">
+                    Use vírgulas para itens separados e hífen para intervalos.<br>
+                    Exemplos: <code>1</code> &nbsp;|&nbsp; <code>2-4</code> &nbsp;|&nbsp; <code>1, 3, 5-7</code>
+                </p>
+                <div class="modal-actions">
+                    <button onclick="confirmarExclusaoLote()" style="background:var(--btn-delete);color:white;border:none;min-width:120px;">Excluir</button>
+                    <button onclick="fecharModalExclusaoLote()" style="background:var(--btn-edit);color:white;border:none;min-width:120px;">Cancelar</button>
+                </div>
+            </div>
+        </div>
     `;
 
     tela.style.display = 'block';
@@ -615,7 +649,7 @@ async function carregarItens(licitacaoId) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -628,11 +662,14 @@ function renderItens() {
         (item.modelo || '').toLowerCase().includes(search)
     );
     if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => `
-        <tr onclick="abrirEdicaoItem('${item.id}')" style="cursor:pointer;" class="${item.cotado ? 'row-cotado' : ''}">
+        <tr onclick="abrirEdicaoItem('${item.id}')"
+            oncontextmenu="onItemContextMenu(event, '${item.id}')"
+            style="cursor:pointer;"
+            class="${item.cotado ? 'row-cotado' : ''}">
             <td>${item.numero || idx+1}</td>
             <td class="descricao-cell">${item.descricao || ''}</td>
             <td>${item.quantidade || 0}</td>
@@ -732,7 +769,7 @@ function recalcularItemTotais() {
 
 async function salvarItem() {
     const itemData = {
-        numero: parseInt(document.getElementById('itemNumero').value),  // ✅ era numero_item
+        numero: parseInt(document.getElementById('itemNumero').value),
         descricao: document.getElementById('itemDescricao').value.trim(),
         quantidade: parseFloat(document.getElementById('itemQuantidade').value),
         unidade: document.getElementById('itemUnidade').value.trim(),
@@ -803,6 +840,178 @@ function switchItemTab(tabId) {
     if (activeContent) activeContent.classList.add('active');
 }
 
+// ========== MENU DE CONTEXTO (CLIQUE DIREITO) ==========
+let contextMenuItemId = null;
+
+function onItemContextMenu(e, itemId) {
+    e.preventDefault();
+    e.stopPropagation();
+    contextMenuItemId = itemId;
+    const menu = createContextMenu();
+    const x = Math.min(e.clientX, window.innerWidth - 180);
+    const y = Math.min(e.clientY, window.innerHeight - 70);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+}
+
+function createContextMenu() {
+    const existing = document.getElementById('itemContextMenu');
+    if (existing) existing.remove();
+    const menu = document.createElement('div');
+    menu.id = 'itemContextMenu';
+    menu.innerHTML = `
+        <div class="context-menu-item danger" onclick="excluirItemContextMenu()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14H6L5 6"></path>
+                <path d="M10 11v6M14 11v6"></path>
+                <path d="M9 6V4h6v2"></path>
+            </svg>
+            Excluir item
+        </div>
+    `;
+    document.body.appendChild(menu);
+    setTimeout(() => {
+        document.addEventListener('click', closeContextMenu, { once: true });
+        document.addEventListener('contextmenu', closeContextMenu, { once: true });
+    }, 10);
+    return menu;
+}
+
+function closeContextMenu() {
+    const menu = document.getElementById('itemContextMenu');
+    if (menu) menu.remove();
+    contextMenuItemId = null;
+}
+
+async function excluirItemContextMenu() {
+    if (!contextMenuItemId) return;
+    const id = contextMenuItemId;
+    closeContextMenu();
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
+    const item = itens.find(i => i.id === id);
+    if (!item) return;
+    if (!confirm(`Excluir o item "${item.descricao}"?`)) return;
+    try {
+        const res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}/itens/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
+        if (!res.ok) throw new Error('Erro ao excluir item');
+        itens = itens.filter(i => i.id !== id);
+        renderItens();
+        atualizarTotais();
+        showToast('Item excluído', 'error');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// ========== EXCLUSÃO EM LOTE ==========
+function abrirModalExclusaoLote() {
+    const modal = document.getElementById('modalExclusaoLote');
+    if (!modal) return;
+    const input = document.getElementById('inputIntervaloExclusao');
+    const msg = document.getElementById('msgErroIntervalo');
+    if (input) input.value = '';
+    if (msg) msg.textContent = '';
+    modal.classList.add('show');
+    setTimeout(() => { if (input) input.focus(); }, 100);
+}
+
+function fecharModalExclusaoLote() {
+    const modal = document.getElementById('modalExclusaoLote');
+    if (modal) modal.classList.remove('show');
+}
+
+function parseIntervaloItens(texto) {
+    const partes = texto.split(',').map(s => s.trim()).filter(Boolean);
+    if (!partes.length) return null;
+
+    const flat = [];
+
+    for (const parte of partes) {
+        if (parte.includes('-')) {
+            const segmentos = parte.split('-');
+            if (segmentos.length !== 2) return null;
+            const a = Number(segmentos[0].trim());
+            const b = Number(segmentos[1].trim());
+            if (isNaN(a) || isNaN(b) || !Number.isInteger(a) || !Number.isInteger(b) || a <= 0 || b <= 0) return null;
+            if (a >= b) return null;
+            for (let i = a; i <= b; i++) flat.push(i);
+        } else {
+            const n = Number(parte);
+            if (isNaN(n) || !Number.isInteger(n) || n <= 0) return null;
+            flat.push(n);
+        }
+    }
+
+    // Valida sequência estritamente crescente
+    for (let i = 1; i < flat.length; i++) {
+        if (flat[i] <= flat[i - 1]) return null;
+    }
+
+    return flat;
+}
+
+async function confirmarExclusaoLote() {
+    const texto = (document.getElementById('inputIntervaloExclusao')?.value || '').trim();
+    const msgEl = document.getElementById('msgErroIntervalo');
+    if (!msgEl) return;
+
+    if (!texto) {
+        msgEl.style.color = 'var(--btn-delete)';
+        msgEl.textContent = 'Informe os números dos itens.';
+        return;
+    }
+
+    const numeros = parseIntervaloItens(texto);
+
+    if (!numeros || numeros.length === 0) {
+        msgEl.style.color = 'var(--btn-delete)';
+        msgEl.textContent = 'Os números não respeitam a sequência.';
+        return;
+    }
+
+    msgEl.textContent = '';
+
+    const itensPraExcluir = itens.filter(i => numeros.includes(Number(i.numero)));
+
+    if (!itensPraExcluir.length) {
+        msgEl.style.color = 'var(--btn-delete)';
+        msgEl.textContent = 'Nenhum item encontrado com esses números.';
+        return;
+    }
+
+    if (!isOnline) { showToast('Sistema offline', 'error'); return; }
+
+    fecharModalExclusaoLote();
+
+    let erros = 0;
+    for (const item of itensPraExcluir) {
+        try {
+            const res = await fetch(`${API_URL}/licitacoes/${currentLicitacaoId}/itens/${item.id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            if (!res.ok) erros++;
+            else itens = itens.filter(i => i.id !== item.id);
+        } catch {
+            erros++;
+        }
+    }
+
+    renderItens();
+    atualizarTotais();
+
+    if (erros > 0) {
+        showToast(`${erros} item(ns) não puderam ser excluídos`, 'error');
+    } else {
+        showToast(`${itensPraExcluir.length} item(ns) excluído(s) com sucesso`, 'error');
+    }
+}
+
 // ========== COTAÇÃO ==========
 function saudacao() {
     const h = new Date().getHours();
@@ -846,7 +1055,6 @@ function abrirModalCotacao() {
     select.innerHTML = '<option value="">Selecione a marca...</option>' +
         marcas.map(m => `<option value="${m}">${m}</option>`).join('');
 
-    // Reset tipo para descrição
     selecionarTipoCotacao('descricao');
 
     const modal = document.getElementById('modalCotacaoItens');
@@ -919,7 +1127,6 @@ async function enviarCotacao() {
         const metodo = fornecedor.metodo_envio || 'whatsapp';
         const msgEncoded = encodeURIComponent(mensagem);
 
-        // Marca os itens da marca como cotado
         for (const item of itensDaMarca) {
             if (!item.cotado) {
                 try {
@@ -1006,3 +1213,9 @@ window.selecionarTipoCotacao = selecionarTipoCotacao;
 window.switchItemTab = switchItemTab;
 window.toggleStatus = toggleStatus;
 window.recalcularItemTotais = recalcularItemTotais;
+window.onItemContextMenu = onItemContextMenu;
+window.excluirItemContextMenu = excluirItemContextMenu;
+window.closeContextMenu = closeContextMenu;
+window.abrirModalExclusaoLote = abrirModalExclusaoLote;
+window.fecharModalExclusaoLote = fecharModalExclusaoLote;
+window.confirmarExclusaoLote = confirmarExclusaoLote;
