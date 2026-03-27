@@ -900,44 +900,28 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ============================================
-   LINK CLICÁVEL NA TABELA DE ITENS
+   ÍCONE DE LINK NA TABELA DE ITENS (estilo neutro)
    ============================================ */
-.link-cell {
+.modelo-link-icon {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    color: #3B82F6;
-    font-weight: 700;
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
+    justify-content: center;
+    color: currentColor;      /* herda a cor do texto */
     text-decoration: none;
-    padding: 3px 8px;
-    border-radius: 5px;
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    transition: background 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
-    white-space: nowrap;
+    transition: none;
 }
-.link-cell:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
+.modelo-link-icon:hover {
     text-decoration: none;
+    color: currentColor;      /* sem mudança de cor */
 }
-.link-cell svg {
-    flex-shrink: 0;
-    opacity: 0.8;
-}
-
-/* Linha com LINK no modelo — reaproveita row-cotado */
-tbody tr.row-link {
-    background: rgba(59, 130, 246, 0.22) !important;
-}
-tbody tr.row-link:nth-child(even) {
-    background: rgba(59, 130, 246, 0.30) !important;
-}
-tbody tr.row-link:hover {
-    background: rgba(59, 130, 246, 0.38) !important;
+.modelo-link-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 1.8;
+    stroke: currentColor;
+    fill: none;
+    display: block;
 }
 
 /* ============================================
