@@ -447,6 +447,12 @@ td.status-col { text-align: center; }
     color: var(--aberta-color);
     border: 1px solid var(--aberta-border);
 }
+/* ATENÇÃO — vermelho */
+.status-badge.atencao {
+    background: rgba(239,68,68,0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.4);
+}
 
 /* MODAIS */
 .modal-overlay {
