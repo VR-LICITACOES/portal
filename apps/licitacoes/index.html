@@ -55,11 +55,11 @@
             </div>
 
             <div class="stat-card no-select">
-                <div class="stat-icon stat-icon-aberta">
+                <div class="stat-icon stat-icon-warning-light">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
                 <div class="stat-content">
-                    <div class="stat-value stat-value-aberta" id="totalAbertas">0</div>
+                    <div class="stat-value stat-value-warning" id="totalAbertas">0</div>
                     <div class="stat-label">Abertas</div>
                 </div>
             </div>
@@ -128,16 +128,16 @@
             </div>
         </div>
 
-        <!-- ── MODAL: PROPOSTAS QUE PRECISAM DE ATENÇÃO ─ -->
+        <!-- ── MODAL: PROPOSTAS VENCENDO HOJE ─────────── -->
         <div class="modal-overlay" id="modalVencidos">
-            <div class="modal-content" style="max-width:720px">
+            <div class="modal-content" style="max-width:680px">
                 <div class="modal-header">
-                    <h3 class="modal-title">⚠️ Propostas que precisam de atenção</h3>
+                    <h3 class="modal-title">⚠️ Propostas com vencimento hoje</h3>
                     <button class="close-modal" onclick="fecharModalVencidos()">✕</button>
                 </div>
                 <div style="overflow-x:auto">
                     <table style="width:100%">
-                        <thead><tr><th>Nº Proposta</th><th>Data</th><th>Hora</th><th>Situação</th></tr></thead>
+                        <thead><tr><th>Nº Proposta</th><th>Data</th><th>Hora</th></thead>
                         <tbody id="vencidosTableBody"></tbody>
                     </table>
                 </div>
@@ -192,10 +192,10 @@
             </div>
         </div>
 
-        <!-- ── TABELA PRINCIPAL (sem coluna Ações) ────── -->
+        <!-- ── TABELA PRINCIPAL ───────────────────────── -->
         <div class="card table-card">
             <div style="overflow-x:auto">
-                <table style="min-width:620px">
+                <table style="min-width:780px">
                     <thead>
                         <tr>
                             <th style="width:46px; text-align:center">✓</th>
