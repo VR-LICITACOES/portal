@@ -156,7 +156,6 @@ app.get('/api/licitacoes', authenticate, async (req, res) => {
         const { mes, ano } = req.query;
         console.log(`[LICITACOES] Requisição recebida - mes: ${mes}, ano: ${ano}, user: ${req.user?.username}`);
 
-        // Verificar se a tabela existe
         const { error: tableCheck } = await supabase
             .from('licitacoes')
             .select('id')
@@ -224,6 +223,23 @@ app.put('/api/licitacoes/:id', authenticate, async (req, res) => {
     }
 });
 
+app.patch('/api/licitacoes/:id/status', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const { data, error } = await supabase
+            .from('licitacoes')
+            .update({ status })
+            .eq('id', id)
+            .select();
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (err) {
+        console.error('[LICITACOES] Erro ao atualizar status:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.delete('/api/licitacoes/:id', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
@@ -244,16 +260,18 @@ app.delete('/api/licitacoes/:id', authenticate, async (req, res) => {
 // Filtra apenas os campos que existem na tabela itens
 function sanitizeItem(body) {
     return {
-        numero:         body.numero         ?? null,
-        descricao:      body.descricao       ?? null,
-        quantidade:     body.quantidade      ?? null,
-        unidade:        body.unidade         ?? null,
-        marca:          body.marca           ?? null,
-        modelo:         body.modelo          ?? null,
-        custo_unitario: body.custo_unitario  ?? null,
-        custo_total:    body.custo_total     ?? null,
-        venda_unitario: body.venda_unitario  ?? null,
-        venda_total:    body.venda_total     ?? null,
+        numero:         body.numero          ?? null,
+        descricao:      body.descricao        ?? null,
+        quantidade:     body.quantidade       ?? null,
+        unidade:        body.unidade          ?? null,
+        marca:          body.marca            ?? null,
+        modelo:         body.modelo           ?? null,
+        custo_unitario: body.custo_unitario   ?? null,
+        custo_total:    body.custo_total      ?? null,
+        venda_unitario: body.venda_unitario   ?? null,
+        venda_total:    body.venda_total      ?? null,
+        frete:          body.frete            ?? 0,
+        prazo_entrega:  body.prazo_entrega    ?? null,
     };
 }
 
@@ -508,7 +526,7 @@ app.get('/fornecedores', (req, res) => res.sendFile(path.join(__dirname, 'apps',
 app.get('/licitacoes', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'licitacoes', 'index.html')));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'apps', 'portal', 'index.html')));
 
-// Keep-alive: evita que o Render free tier hiberne
+// Keep-alive
 const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
 setInterval(async () => {
     try {
@@ -517,7 +535,7 @@ setInterval(async () => {
     } catch (err) {
         console.warn('⚠️ Keep-alive falhou:', err.message);
     }
-}, 10 * 60 * 1000); // a cada 10 minutos
+}, 10 * 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
