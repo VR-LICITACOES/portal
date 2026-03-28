@@ -222,7 +222,11 @@ function filterLicitacoes() {
     const statusFilter = document.getElementById('filterStatus')?.value || '';
     let filtered = licitacoes.filter(l => {
         const matchSearch = l.numero_proposta.toLowerCase().includes(search) || (l.uf && l.uf.toLowerCase().includes(search));
-        const matchStatus = !statusFilter || l.status === statusFilter;
+        let matchStatus = true;
+        if (statusFilter) {
+            const statusExibido = calcularStatusExibido(l);
+            matchStatus = statusExibido === statusFilter;
+        }
         return matchSearch && matchStatus;
     });
     if (currentDateFilter) {
@@ -237,6 +241,17 @@ function formatDateToBR(dateStr) {
     return `${day}/${month}/${year}`;
 }
 
+function calcularStatusExibido(l) {
+    if (l.status === 'ENVIADA') return 'ENVIADA';
+    if (!l.data) return l.status;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const [y, m, d] = l.data.split('-').map(Number);
+    const dataReg = new Date(y, m - 1, d);
+    if (dataReg <= hoje) return 'ATENÇÃO';
+    return 'ABERTA';
+}
+
 function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
@@ -246,6 +261,8 @@ function renderLicitacoes(lista) {
     }
     tbody.innerHTML = lista.map(l => {
         const isEnviada = l.status === 'ENVIADA';
+        const statusExibido = calcularStatusExibido(l);
+        const badgeClass = statusExibido === 'ENVIADA' ? 'success' : statusExibido === 'ATENÇÃO' ? 'atencao' : 'aberta';
         return `
         <tr class="${isEnviada ? 'row-enviada' : ''}" oncontextmenu="onLicitacaoContextMenu(event, '${l.id}')">
             <td style="text-align:center;" onclick="event.stopPropagation()">
@@ -259,7 +276,7 @@ function renderLicitacoes(lista) {
             <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')" class="status-col">
-                <span class="status-badge ${isEnviada ? 'success' : 'aberta'}">${l.status}</span>
+                <span class="status-badge ${badgeClass}">${statusExibido}</span>
             </td>
         </tr>`;
     }).join('');
@@ -638,6 +655,8 @@ function mostrarTelaItens() {
                                 <th style="min-width:96px;">CUSTO TOTAL</th>
                                 <th style="min-width:96px;">VENDA UNT</th>
                                 <th style="min-width:96px;">VENDA TOTAL</th>
+                                <th style="min-width:90px;">FRETE</th>
+                                <th style="min-width:100px;">LUCRO BRUTO</th>
                             </tr>
                         </thead>
                         <tbody id="itensContainer">
@@ -812,7 +831,8 @@ function renderItens() {
         (item.modelo || '').toLowerCase().includes(search)
     );
     if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:2rem;">Nenhum item cadastrado</td></tr>';
+        atualizarTotais();
         return;
     }
     tbody.innerHTML = filtered.map((item, idx) => {
@@ -830,6 +850,12 @@ function renderItens() {
                </a>`
             : escapeHtml(modeloValue);
 
+        // Recalcular lucro bruto por item descontando frete
+        const custoTotal = parseFloat(item.custo_total) || 0;
+        const vendaTotal = parseFloat(item.venda_total) || 0;
+        const frete = parseFloat(item.frete) || 0;
+        const lucroBruto = vendaTotal - custoTotal - frete;
+
         return `
         <tr onclick="abrirEdicaoItem('${item.id}')"
             oncontextmenu="onItemContextMenu(event, '${item.id}')"
@@ -845,8 +871,11 @@ function renderItens() {
             <td class="col-money">${formatMoney(item.custo_total)}</td>
             <td class="col-money">${formatMoney(item.venda_unitario)}</td>
             <td class="col-money">${formatMoney(item.venda_total)}</td>
+            <td class="col-money">${formatMoney(frete)}</td>
+            <td class="col-money" style="color:${lucroBruto >= 0 ? 'var(--success-color)' : 'var(--btn-delete)'};">${formatMoney(lucroBruto)}</td>
          </tr>`;
     }).join('');
+    atualizarTotais();
 }
 
 function escapeHtml(str) {
@@ -860,12 +889,16 @@ function escapeHtml(str) {
 }
 
 function atualizarTotais() {
-    // Soma diretamente dos campos do item (valores numéricos brutos)
     const totalCusto = itens.reduce((acc, i) => acc + (parseFloat(i.custo_total) || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (parseFloat(i.venda_total) || 0), 0);
     const totalFrete = itens.reduce((acc, i) => acc + (parseFloat(i.frete) || 0), 0);
-    // Lucro bruto total = venda total - custo total - frete total
-    const totalLucroBruto = totalVenda - totalCusto - totalFrete;
+    // Lucro bruto total = soma do lucro de cada item (venda_total - custo_total - frete) por item
+    const totalLucroBruto = itens.reduce((acc, i) => {
+        const venda = parseFloat(i.venda_total) || 0;
+        const custo = parseFloat(i.custo_total) || 0;
+        const frete = parseFloat(i.frete) || 0;
+        return acc + (venda - custo - frete);
+    }, 0);
 
     const elCusto = document.getElementById('totalCusto');
     const elVenda = document.getElementById('totalVenda');
@@ -874,7 +907,10 @@ function atualizarTotais() {
     if (elCusto) elCusto.textContent = formatMoney(totalCusto);
     if (elVenda) elVenda.textContent = formatMoney(totalVenda);
     if (elFrete) elFrete.textContent = formatMoney(totalFrete);
-    if (elLucro) elLucro.textContent = formatMoney(totalLucroBruto);
+    if (elLucro) {
+        elLucro.textContent = formatMoney(totalLucroBruto);
+        elLucro.style.color = totalLucroBruto >= 0 ? 'var(--success-color)' : 'var(--btn-delete)';
+    }
 }
 
 function formatMoney(value) {
@@ -914,9 +950,12 @@ function abrirEdicaoItem(itemId) {
     document.getElementById('itemUnidade').value = item.unidade || 'UN';
     document.getElementById('itemMarca').value = item.marca || '';
     document.getElementById('itemModelo').value = item.modelo || '';
-    // Prazo de entrega e frete — garantir que sejam carregados corretamente
-    document.getElementById('itemPrazoEntrega').value = item.prazo_entrega || '';
-    document.getElementById('itemFrete').value = (item.frete !== null && item.frete !== undefined && item.frete !== '') ? item.frete : '';
+    // prazo_entrega: suporte ao campo com ambos os nomes possíveis
+    const prazo = item.prazo_entrega ?? item.prazoEntrega ?? '';
+    document.getElementById('itemPrazoEntrega').value = prazo;
+    // frete: garantir que 0 seja exibido como 0, não vazio
+    const freteVal = (item.frete !== null && item.frete !== undefined && item.frete !== '') ? Number(item.frete) : '';
+    document.getElementById('itemFrete').value = freteVal;
     document.getElementById('itemCustoUnitario').value = (item.custo_unitario !== null && item.custo_unitario !== undefined) ? item.custo_unitario : '';
     document.getElementById('itemVendaUnitario').value = (item.venda_unitario !== null && item.venda_unitario !== undefined) ? item.venda_unitario : '';
     recalcularItemTotais();
@@ -947,26 +986,33 @@ function recalcularItemTotais() {
 }
 
 async function salvarItem() {
+    const qtd = parseFloat(document.getElementById('itemQuantidade').value) || 0;
+    const custoUnit = parseFloat(document.getElementById('itemCustoUnitario').value) || 0;
+    const vendaUnit = parseFloat(document.getElementById('itemVendaUnitario').value) || 0;
+    const frete = parseFloat(document.getElementById('itemFrete').value) || 0;
+    const custoTotal = qtd * custoUnit;
+    const vendaTotal = qtd * vendaUnit;
+    const lucroBruto = vendaTotal - custoTotal - frete;
+
     const itemData = {
         numero: parseInt(document.getElementById('itemNumero').value),
         descricao: document.getElementById('itemDescricao').value.trim(),
-        quantidade: parseFloat(document.getElementById('itemQuantidade').value),
+        quantidade: qtd,
         unidade: document.getElementById('itemUnidade').value.trim(),
         marca: document.getElementById('itemMarca').value.trim(),
         modelo: document.getElementById('itemModelo').value.trim(),
-        custo_unitario: parseFloat(document.getElementById('itemCustoUnitario').value) || 0,
-        venda_unitario: parseFloat(document.getElementById('itemVendaUnitario').value) || 0,
+        custo_unitario: custoUnit,
+        venda_unitario: vendaUnit,
         prazo_entrega: document.getElementById('itemPrazoEntrega').value.trim(),
-        frete: parseFloat(document.getElementById('itemFrete').value) || 0
+        frete: frete,
+        custo_total: custoTotal,
+        venda_total: vendaTotal,
+        lucro_bruto: lucroBruto
     };
     if (!itemData.descricao || isNaN(itemData.quantidade) || itemData.quantidade <= 0) {
         showToast('Descrição e quantidade são obrigatórios', 'error');
         return;
     }
-    itemData.custo_total = itemData.custo_unitario * itemData.quantidade;
-    itemData.venda_total = itemData.venda_unitario * itemData.quantidade;
-    itemData.lucro_bruto = itemData.venda_total - itemData.custo_total - (itemData.frete || 0);
-
     if (!isOnline) { showToast('Sistema offline', 'error'); return; }
     try {
         let url, method;
@@ -985,11 +1031,15 @@ async function salvarItem() {
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao salvar item');
         const saved = await res.json();
+        // Mescla os dados enviados com os dados retornados pela API,
+        // garantindo que campos como prazo_entrega e frete não se percam
+        // caso a API não os devolva no corpo de resposta
+        const mergedItem = { ...itemData, ...saved };
         if (method === 'POST') {
-            itens.push(saved);
+            itens.push(mergedItem);
         } else {
-            const index = itens.findIndex(i => i.id === saved.id);
-            if (index !== -1) itens[index] = saved;
+            const index = itens.findIndex(i => i.id === (saved.id || editingItemId));
+            if (index !== -1) itens[index] = mergedItem;
         }
         fecharItemModal();
         renderItens();
