@@ -811,7 +811,13 @@ async function carregarItens(licitacaoId) {
         const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, { headers: getHeaders() });
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao carregar itens');
-        itens = await res.json();
+        const raw = await res.json();
+        // Normaliza frete (null -> 0) e prazo_entrega ao carregar da API
+        itens = raw.map(i => ({
+            ...i,
+            frete: (i.frete !== null && i.frete !== undefined) ? Number(i.frete) : 0,
+            prazo_entrega: i.prazo_entrega ?? i.prazoEntrega ?? ''
+        }));
         renderItens();
         atualizarTotais();
     } catch (err) {
@@ -1031,10 +1037,10 @@ async function salvarItem() {
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao salvar item');
         const saved = await res.json();
-        // Mescla os dados enviados com os dados retornados pela API,
-        // garantindo que campos como prazo_entrega e frete não se percam
-        // caso a API não os devolva no corpo de resposta
-        const mergedItem = { ...itemData, ...saved };
+        // Mescla: API define id e campos gerenciados pelo banco,
+        // mas itemData tem prioridade para prazo_entrega, frete e cálculos locais
+        // que podem não ser devolvidos corretamente pela API
+        const mergedItem = { ...saved, ...itemData, id: saved.id || editingItemId };
         if (method === 'POST') {
             itens.push(mergedItem);
         } else {
