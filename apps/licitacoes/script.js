@@ -18,6 +18,9 @@ let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
 let currentDateFilter = null;
 
+// Context menu para tabela principal
+let contextMenuLicitacaoId = null;
+
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
 
@@ -28,9 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(checkServerStatus, 15000);
     setInterval(() => { if (isOnline) loadLicitacoes(); }, 30000);
     setInterval(verificarPrazosVencidos, 60000);
-    // Fechar menus de contexto ao clicar fora
-    document.addEventListener('click', closeLicitacaoContextMenu);
-    document.addEventListener('contextmenu', closeLicitacaoContextMenu);
+
+    // Fechar context menu ao clicar fora
+    document.addEventListener('click', () => closeMainContextMenu());
 });
 
 // ========== AUTENTICAÇÃO ==========
@@ -152,20 +155,32 @@ function updateDisplay() {
     filterLicitacoes();
 }
 
+// ========== DASHBOARD / STATS ==========
+// "ATENÇÃO" monitora registros cuja data já passou ou é hoje e status ainda é ABERTA
 function updateStats() {
     const total = licitacoes.length;
     const enviadas = licitacoes.filter(l => l.status === 'ENVIADA').length;
     const abertas = licitacoes.filter(l => l.status === 'ABERTA').length;
-    const hoje = new Date().toISOString().split('T')[0];
-    // CORREÇÃO: considera data <= hoje (vencidas + passadas)
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data <= hoje).length;
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    // Atenção = ABERTA e data <= hoje (vencidas ou vencendo hoje)
+    const atencao = licitacoes.filter(l => {
+        if (l.status !== 'ABERTA') return false;
+        if (!l.data) return false;
+        const [y, m, d] = l.data.split('-').map(Number);
+        const dataReg = new Date(y, m - 1, d);
+        return dataReg <= hoje;
+    });
+
     document.getElementById('totalLicitacoes').textContent = total;
     document.getElementById('totalEnviadas').textContent = enviadas;
     document.getElementById('totalAbertas').textContent = abertas;
-    document.getElementById('totalVencidas').textContent = vencidas;
+    document.getElementById('totalVencidas').textContent = atencao.length;
 
     const card = document.getElementById('prazoVencidoCard');
-    if (vencidas > 0) {
+    if (atencao.length > 0) {
         card.classList.add('has-alert');
         let badge = card.querySelector('.pulse-badge');
         if (!badge) {
@@ -173,12 +188,27 @@ function updateStats() {
             badge.className = 'pulse-badge';
             card.appendChild(badge);
         }
-        badge.textContent = vencidas;
+        badge.textContent = atencao.length;
 
-        // Push de alerta (toast) - evitando spam com variável de tempo
-        if (!window._lastAlertTime || (Date.now() - window._lastAlertTime > 60000)) {
-            window._lastAlertTime = Date.now();
-            showToast(`⚠️ ${vencidas} proposta(s) em atenção (data vencida ou hoje)`, 'error');
+        // Push notification (apenas uma vez por sessão por grupo de alertas)
+        const alertKey = `alerted_${atencao.map(l=>l.id).sort().join('_')}`;
+        if (!sessionStorage.getItem(alertKey)) {
+            sessionStorage.setItem(alertKey, '1');
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('⚠️ Licitações com atenção', {
+                    body: `${atencao.length} proposta(s) com prazo vencido ou vencendo hoje.`,
+                    icon: '/favicon.ico'
+                });
+            } else if ('Notification' in window && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(perm => {
+                    if (perm === 'granted') {
+                        new Notification('⚠️ Licitações com atenção', {
+                            body: `${atencao.length} proposta(s) com prazo vencido ou vencendo hoje.`,
+                            icon: '/favicon.ico'
+                        });
+                    }
+                });
+            }
         }
     } else {
         card.classList.remove('has-alert');
@@ -211,13 +241,13 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => {
         const isEnviada = l.status === 'ENVIADA';
         return `
-        <tr data-id="${l.id}" class="${isEnviada ? 'row-enviada' : ''}">
+        <tr class="${isEnviada ? 'row-enviada' : ''}" oncontextmenu="onLicitacaoContextMenu(event, '${l.id}')">
             <td style="text-align:center;" onclick="event.stopPropagation()">
                 <div class="checkbox-wrapper">
                     <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${isEnviada ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
@@ -229,82 +259,67 @@ function renderLicitacoes(lista) {
             <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')" class="status-col">
-                <span class="status-badge ${isEnviada ? 'success' : 'warning'}">${l.status}</span>
+                <span class="status-badge ${isEnviada ? 'success' : 'aberta'}">${l.status}</span>
             </td>
         </tr>`;
     }).join('');
-
-    // Adicionar evento de contexto nas linhas da tabela
-    tbody.querySelectorAll('tr[data-id]').forEach(row => {
-        row.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const id = row.getAttribute('data-id');
-            onLicitacaoContextMenu(e, id);
-        });
-    });
 }
 
-// ========== MENU DE CONTEXTO PARA LICITAÇÕES ==========
-let licitacaoContextMenu = null;
-let currentLicitacaoContextId = null;
-
+// ========== CONTEXT MENU — TABELA PRINCIPAL ==========
 function onLicitacaoContextMenu(e, id) {
-    closeLicitacaoContextMenu();
-    currentLicitacaoContextId = id;
-    licitacaoContextMenu = document.createElement('div');
-    licitacaoContextMenu.id = 'licitacaoContextMenu';
-    licitacaoContextMenu.className = 'context-menu';
-    licitacaoContextMenu.style.cssText = `
-        position: fixed;
-        z-index: 999999;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        box-shadow: 0 8px 24px var(--shadow);
-        min-width: 160px;
-        padding: 4px 0;
-        animation: scaleIn 0.12s ease;
-        transform-origin: top left;
-    `;
-    licitacaoContextMenu.innerHTML = `
-        <div class="context-menu-item" onclick="editLicitacaoContext()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
-            Editar
+    e.preventDefault();
+    e.stopPropagation();
+    contextMenuLicitacaoId = id;
+    closeMainContextMenu(); // remove qualquer menu anterior
+
+    const menu = document.createElement('div');
+    menu.id = 'mainContextMenu';
+    menu.innerHTML = `
+        <div class="context-menu-item" onclick="editLicitacaoCtx()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Editar proposta
         </div>
-        <div class="context-menu-item danger" onclick="deleteLicitacaoContext()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>
-            Excluir
+        <div class="context-menu-item danger" onclick="openDeleteModalCtx()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14H6L5 6"></path>
+                <path d="M10 11v6M14 11v6"></path>
+                <path d="M9 6V4h6v2"></path>
+            </svg>
+            Excluir proposta
         </div>
     `;
-    document.body.appendChild(licitacaoContextMenu);
-    const x = Math.min(e.clientX, window.innerWidth - 180);
-    const y = Math.min(e.clientY, window.innerHeight - 70);
-    licitacaoContextMenu.style.left = x + 'px';
-    licitacaoContextMenu.style.top = y + 'px';
-    // Fecha ao clicar fora (evento já adicionado globalmente)
+    document.body.appendChild(menu);
+
+    const x = Math.min(e.clientX, window.innerWidth - 200);
+    const y = Math.min(e.clientY, window.innerHeight - 100);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    setTimeout(() => {
+        document.addEventListener('click', closeMainContextMenu, { once: true });
+        document.addEventListener('contextmenu', closeMainContextMenu, { once: true });
+    }, 10);
 }
 
-function closeLicitacaoContextMenu() {
-    if (licitacaoContextMenu) {
-        licitacaoContextMenu.remove();
-        licitacaoContextMenu = null;
-    }
-    currentLicitacaoContextId = null;
+function closeMainContextMenu() {
+    const menu = document.getElementById('mainContextMenu');
+    if (menu) menu.remove();
 }
 
-function editLicitacaoContext() {
-    if (currentLicitacaoContextId) {
-        editLicitacao(currentLicitacaoContextId);
-    }
-    closeLicitacaoContextMenu();
+function editLicitacaoCtx() {
+    const id = contextMenuLicitacaoId;
+    closeMainContextMenu();
+    if (id) openFormModal(id);
 }
 
-function deleteLicitacaoContext() {
-    if (currentLicitacaoContextId) {
-        openDeleteModal(currentLicitacaoContextId);
-    }
-    closeLicitacaoContextMenu();
+function openDeleteModalCtx() {
+    const id = contextMenuLicitacaoId;
+    closeMainContextMenu();
+    if (id) openDeleteModal(id);
 }
 
 async function toggleStatus(id) {
@@ -422,12 +437,21 @@ async function confirmarExclusao() {
     } catch (err) { showToast(err.message, 'error'); }
 }
 
-// ========== MODAL PRAZO VENCIDO ==========
+// ========== MODAL PRAZO VENCIDO / ATENÇÃO ==========
 function abrirModalVencidos() {
-    const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const atencao = licitacoes.filter(l => {
+        if (l.status !== 'ABERTA') return false;
+        if (!l.data) return false;
+        const [y, m, d] = l.data.split('-').map(Number);
+        const dataReg = new Date(y, m - 1, d);
+        return dataReg <= hoje;
+    });
+
     vencidosPage = 1;
-    renderVencidosModal(vencidas);
+    renderVencidosModal(atencao);
     document.getElementById('modalVencidos').classList.add('show');
 }
 
@@ -437,9 +461,27 @@ function renderVencidosModal(vencidas) {
     const totalPages = Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE);
     const tbody = document.getElementById('vencidosTableBody');
     if (!tbody) return;
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
     tbody.innerHTML = pageData.length === 0
-        ? '<tr><td colspan="3" style="text-align:center;">Nenhuma proposta com vencimento hoje</td></tr>'
-        : pageData.map(l => `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();"><td>${l.numero_proposta}</td><td>${formatDateToBR(l.data)}</td><td>${l.hora || '-'}</td></tr>`).join('');
+        ? '<tr><td colspan="4" style="text-align:center;">Nenhuma proposta requer atenção</td></tr>'
+        : pageData.map(l => {
+            const [y, m, d] = l.data.split('-').map(Number);
+            const dataReg = new Date(y, m - 1, d);
+            const isHoje = dataReg.getTime() === hoje.getTime();
+            const label = isHoje
+                ? '<span style="color:#f97316;font-weight:700;font-size:0.78rem;">HOJE</span>'
+                : '<span style="color:#EF4444;font-weight:700;font-size:0.78rem;">VENCIDA</span>';
+            return `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();" style="cursor:pointer;">
+                <td>${l.numero_proposta}</td>
+                <td>${formatDateToBR(l.data)}</td>
+                <td>${l.hora || '-'}</td>
+                <td>${label}</td>
+            </tr>`;
+        }).join('');
+
     const pagContainer = document.getElementById('vencidosPaginacao');
     if (pagContainer && totalPages > 1) {
         let h = '<div class="paginacao-btns">';
@@ -451,11 +493,17 @@ function renderVencidosModal(vencidas) {
 }
 
 function vencidosPageChange(page) {
-    const hoje = new Date().toISOString().split('T')[0];
-    const vencidas = licitacoes.filter(l => l.status === 'ABERTA' && l.data === hoje);
-    if (page >= 1 && page <= Math.ceil(vencidas.length / VENCIDOS_PAGE_SIZE)) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const atencao = licitacoes.filter(l => {
+        if (l.status !== 'ABERTA') return false;
+        if (!l.data) return false;
+        const [y, m, d] = l.data.split('-').map(Number);
+        return new Date(y, m - 1, d) <= hoje;
+    });
+    if (page >= 1 && page <= Math.ceil(atencao.length / VENCIDOS_PAGE_SIZE)) {
         vencidosPage = page;
-        renderVencidosModal(vencidas);
+        renderVencidosModal(atencao);
     }
 }
 
@@ -487,10 +535,12 @@ function normalizeUrl(value) {
 }
 
 // ========== TELA DE ITENS ==========
+// Abertura instantânea: monta a UI imediatamente, carrega dados em background
 function viewLicitacao(id) {
     currentLicitacaoId = id;
-    mostrarTelaItens();
-    carregarItens(id);
+    itens = []; // limpa itens anteriores
+    mostrarTelaItens(); // exibe UI imediatamente (sem aguardar dados)
+    carregarItens(id); // carrega em background
 }
 
 function voltar() {
@@ -499,6 +549,7 @@ function voltar() {
     currentLicitacaoId = null;
     itens = [];
     closeContextMenu();
+    closeMainContextMenu();
 }
 
 function mostrarTelaItens() {
@@ -589,7 +640,9 @@ function mostrarTelaItens() {
                                 <th style="min-width:96px;">VENDA TOTAL</th>
                             </tr>
                         </thead>
-                        <tbody id="itensContainer"></tbody>
+                        <tbody id="itensContainer">
+                            <tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-secondary);">Carregando itens...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -638,14 +691,14 @@ function mostrarTelaItens() {
                     <div class="tab-content" id="item-tab-transporte">
                         <div class="form-grid">
                             <div class="form-group"><label>Prazo de Entrega</label><input type="text" id="itemPrazoEntrega"></div>
-                            <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Frete (R$)</label><input type="number" step="any" id="itemFrete" oninput="recalcularItemTotais()"></div>
                         </div>
                     </div>
                     <div class="tab-content" id="item-tab-valores">
                         <div class="form-grid">
-                            <div class="form-group"><label>Custo Unitário</label><input type="number" step="any" id="itemCustoUnitario" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Custo Unitário</label><input type="number" step="any" id="itemCustoUnitario" oninput="recalcularItemTotais()"></div>
                             <div class="form-group"><label>Custo Total</label><input type="text" id="itemCustoTotal" readonly></div>
-                            <div class="form-group"><label>Venda Unitário</label><input type="number" step="any" id="itemVendaUnitario" onchange="recalcularItemTotais()"></div>
+                            <div class="form-group"><label>Venda Unitário</label><input type="number" step="any" id="itemVendaUnitario" oninput="recalcularItemTotais()"></div>
                             <div class="form-group"><label>Venda Total</label><input type="text" id="itemVendaTotal" readonly></div>
                             <div class="form-group"><label>Lucro Bruto</label><input type="text" id="itemLucroBruto" readonly></div>
                         </div>
@@ -730,7 +783,11 @@ function mostrarTelaItens() {
 
 // ========== CRUD DE ITENS ==========
 async function carregarItens(licitacaoId) {
-    if (!isOnline) return;
+    if (!isOnline) {
+        const tbody = document.getElementById('itensContainer');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Sistema offline</td></tr>';
+        return;
+    }
     try {
         const res = await fetch(`${API_URL}/licitacoes/${licitacaoId}/itens`, { headers: getHeaders() });
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
@@ -762,6 +819,7 @@ function renderItens() {
         const modeloValue = item.modelo || '';
         const temLink = isLink(modeloValue);
         const rowClass = (temLink || item.cotado) ? 'row-cotado' : '';
+
         const modeloCell = temLink
             ? `<a href="${escapeHtml(normalizeUrl(modeloValue))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="modelo-link-icon">
                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -771,6 +829,7 @@ function renderItens() {
                    </svg>
                </a>`
             : escapeHtml(modeloValue);
+
         return `
         <tr onclick="abrirEdicaoItem('${item.id}')"
             oncontextmenu="onItemContextMenu(event, '${item.id}')"
@@ -786,7 +845,7 @@ function renderItens() {
             <td class="col-money">${formatMoney(item.custo_total)}</td>
             <td class="col-money">${formatMoney(item.venda_unitario)}</td>
             <td class="col-money">${formatMoney(item.venda_total)}</td>
-          </tr>`;
+         </tr>`;
     }).join('');
 }
 
@@ -801,10 +860,13 @@ function escapeHtml(str) {
 }
 
 function atualizarTotais() {
+    // Soma diretamente dos campos do item (valores numéricos brutos)
     const totalCusto = itens.reduce((acc, i) => acc + (parseFloat(i.custo_total) || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (parseFloat(i.venda_total) || 0), 0);
     const totalFrete = itens.reduce((acc, i) => acc + (parseFloat(i.frete) || 0), 0);
-    const totalLucroBruto = itens.reduce((acc, i) => acc + (parseFloat(i.lucro_bruto) || 0), 0);
+    // Lucro bruto total = venda total - custo total - frete total
+    const totalLucroBruto = totalVenda - totalCusto - totalFrete;
+
     const elCusto = document.getElementById('totalCusto');
     const elVenda = document.getElementById('totalVenda');
     const elFrete = document.getElementById('totalFrete');
@@ -816,7 +878,7 @@ function atualizarTotais() {
 }
 
 function formatMoney(value) {
-    if (value === undefined || value === null) return 'R$ 0,00';
+    if (value === undefined || value === null || value === '') return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
@@ -852,10 +914,11 @@ function abrirEdicaoItem(itemId) {
     document.getElementById('itemUnidade').value = item.unidade || 'UN';
     document.getElementById('itemMarca').value = item.marca || '';
     document.getElementById('itemModelo').value = item.modelo || '';
+    // Prazo de entrega e frete — garantir que sejam carregados corretamente
     document.getElementById('itemPrazoEntrega').value = item.prazo_entrega || '';
-    document.getElementById('itemFrete').value = item.frete || '';
-    document.getElementById('itemCustoUnitario').value = item.custo_unitario || '';
-    document.getElementById('itemVendaUnitario').value = item.venda_unitario || '';
+    document.getElementById('itemFrete').value = (item.frete !== null && item.frete !== undefined && item.frete !== '') ? item.frete : '';
+    document.getElementById('itemCustoUnitario').value = (item.custo_unitario !== null && item.custo_unitario !== undefined) ? item.custo_unitario : '';
+    document.getElementById('itemVendaUnitario').value = (item.venda_unitario !== null && item.venda_unitario !== undefined) ? item.venda_unitario : '';
     recalcularItemTotais();
     switchItemTab('item-tab-geral');
     document.getElementById('itemModal').classList.add('show');
@@ -956,7 +1019,7 @@ function switchItemTab(tabId) {
     if (activeContent) activeContent.classList.add('active');
 }
 
-// ========== MENU DE CONTEXTO (CLIQUE DIREITO) PARA ITENS ==========
+// ========== MENU DE CONTEXTO (CLIQUE DIREITO) — ITENS ==========
 let contextMenuItemId = null;
 
 function onItemContextMenu(e, itemId) {
@@ -1044,9 +1107,7 @@ function fecharModalExclusaoLote() {
 function parseIntervaloItens(texto) {
     const partes = texto.split(',').map(s => s.trim()).filter(Boolean);
     if (!partes.length) return null;
-
     const flat = [];
-
     for (const parte of partes) {
         if (parte.includes('-')) {
             const segmentos = parte.split('-');
@@ -1062,11 +1123,9 @@ function parseIntervaloItens(texto) {
             flat.push(n);
         }
     }
-
     for (let i = 1; i < flat.length; i++) {
         if (flat[i] <= flat[i - 1]) return null;
     }
-
     return flat;
 }
 
@@ -1074,35 +1133,26 @@ async function confirmarExclusaoLote() {
     const texto = (document.getElementById('inputIntervaloExclusao')?.value || '').trim();
     const msgEl = document.getElementById('msgErroIntervalo');
     if (!msgEl) return;
-
     if (!texto) {
         msgEl.style.color = 'var(--btn-delete)';
         msgEl.textContent = 'Informe os números dos itens.';
         return;
     }
-
     const numeros = parseIntervaloItens(texto);
-
     if (!numeros || numeros.length === 0) {
         msgEl.style.color = 'var(--btn-delete)';
         msgEl.textContent = 'Os números não respeitam a sequência.';
         return;
     }
-
     msgEl.textContent = '';
-
     const itensPraExcluir = itens.filter(i => numeros.includes(Number(i.numero)));
-
     if (!itensPraExcluir.length) {
         msgEl.style.color = 'var(--btn-delete)';
         msgEl.textContent = 'Nenhum item encontrado com esses números.';
         return;
     }
-
     if (!isOnline) { showToast('Sistema offline', 'error'); return; }
-
     fecharModalExclusaoLote();
-
     let erros = 0;
     for (const item of itensPraExcluir) {
         try {
@@ -1112,14 +1162,10 @@ async function confirmarExclusaoLote() {
             });
             if (!res.ok) erros++;
             else itens = itens.filter(i => i.id !== item.id);
-        } catch {
-            erros++;
-        }
+        } catch { erros++; }
     }
-
     renderItens();
     atualizarTotais();
-
     if (erros > 0) {
         showToast(`${erros} item(ns) não puderam ser excluídos`, 'error');
     } else {
@@ -1160,7 +1206,6 @@ function abrirModalCotacao() {
         showToast('Nenhum item cadastrado nesta proposta', 'error');
         return;
     }
-
     const marcasComItens = {};
     for (const item of itens) {
         const marca = (item.marca || '').trim();
@@ -1168,27 +1213,21 @@ function abrirModalCotacao() {
         if (!marcasComItens[marca]) marcasComItens[marca] = [];
         marcasComItens[marca].push(item);
     }
-
     const marcasDisponiveisSet = new Set();
     for (const [marca, itensDaMarca] of Object.entries(marcasComItens)) {
         const algumSemLink = itensDaMarca.some(i => !isLink(i.modelo || ''));
         if (algumSemLink) marcasDisponiveisSet.add(marca);
     }
-
     const marcas = [...marcasDisponiveisSet].sort();
-
     if (!marcas.length) {
         showToast('Nenhuma marca disponível para cotação (todos os itens possuem link como modelo)', 'error');
         return;
     }
-
     const select = document.getElementById('cotacaoFornecedorSelect');
     if (!select) return;
     select.innerHTML = '<option value="">Selecione a marca...</option>' +
         marcas.map(m => `<option value="${m}">${m}</option>`).join('');
-
     selecionarTipoCotacao('descricao');
-
     const modal = document.getElementById('modalCotacaoItens');
     if (modal) modal.classList.add('show');
 }
@@ -1214,12 +1253,10 @@ async function enviarCotacao() {
         return;
     }
     const tipo = document.getElementById('cotacaoTipoHidden')?.value || 'descricao';
-
     const itensDaMarca = itens.filter(i =>
         (i.marca || '').toLowerCase() === marcaSelecionada.toLowerCase() &&
         !isLink(i.modelo || '')
     );
-
     const linhas = itensDaMarca
         .filter(item => tipo === 'modelo' ? (item.modelo || item.descricao) : item.descricao)
         .map((item, idx) => {
@@ -1229,20 +1266,16 @@ async function enviarCotacao() {
             const unidade = item.unidade ? ` ${item.unidade}` : '';
             return `${idx + 1} - ${campo}\nQuantidade: ${item.quantidade}${unidade}`;
         });
-
     if (!linhas.length) {
         showToast('Nenhum item com esta marca para cotar', 'error');
         return;
     }
     const mensagem = `${saudacao()}!\nGostaria de pedir, por gentileza, um orçamento para:\n\n${linhas.join('\n\n')}`;
-
     if (!isOnline) { showToast('Sistema offline', 'error'); return; }
-
     const btn = document.getElementById('btnEnviarCotacao');
     const label = document.getElementById('btnEnviarCotacaoLabel');
     if (btn) btn.disabled = true;
     if (label) label.textContent = 'Buscando...';
-
     try {
         const res = await fetch(`${API_URL}/fornecedores?search=${encodeURIComponent(marcaSelecionada)}&limit=20`, {
             headers: getHeaders()
@@ -1250,19 +1283,15 @@ async function enviarCotacao() {
         if (!res.ok) throw new Error('Erro ao buscar fornecedor');
         const resultado = await res.json();
         const lista = Array.isArray(resultado) ? resultado : (resultado.data || []);
-
         const fornecedor = lista.find(f =>
             f.nome.trim().toLowerCase() === marcaSelecionada.trim().toLowerCase()
         );
-
         if (!fornecedor) {
             showToast('Fornecedor não encontrado', 'error');
             return;
         }
-
         const metodo = fornecedor.metodo_envio || 'whatsapp';
         const msgEncoded = encodeURIComponent(mensagem);
-
         for (const item of itensDaMarca) {
             if (!item.cotado) {
                 try {
@@ -1276,7 +1305,6 @@ async function enviarCotacao() {
             }
         }
         renderItens();
-
         if (metodo === 'whatsapp') {
             const celular = (fornecedor.celular || fornecedor.telefone || '').replace(/\D/g, '');
             if (!celular) {
@@ -1355,5 +1383,7 @@ window.closeContextMenu = closeContextMenu;
 window.abrirModalExclusaoLote = abrirModalExclusaoLote;
 window.fecharModalExclusaoLote = fecharModalExclusaoLote;
 window.confirmarExclusaoLote = confirmarExclusaoLote;
-window.editLicitacaoContext = editLicitacaoContext;
-window.deleteLicitacaoContext = deleteLicitacaoContext;
+window.onLicitacaoContextMenu = onLicitacaoContextMenu;
+window.closeMainContextMenu = closeMainContextMenu;
+window.editLicitacaoCtx = editLicitacaoCtx;
+window.openDeleteModalCtx = openDeleteModalCtx;
