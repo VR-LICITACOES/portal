@@ -75,6 +75,18 @@
 
                 <div class="search-bar-filters">
                     <div class="filter-dropdown-inline">
+                        <select id="filterPortal" onchange="filterLicitacoes()">
+                            <option value="">Todos os Portais</option>
+                            <option value="SIADES">SIADES</option>
+                            <option value="TRANSPETRO">TRANSPETRO</option>
+                            <option value="LICITAÇÕES-E">LICITAÇÕES-E</option>
+                            <option value="COMPRASNET">COMPRASNET</option>
+                            <option value="PETRONECT">PETRONECT</option>
+                        </select>
+                        <svg class="dropdown-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+
+                    <div class="filter-dropdown-inline">
                         <select id="filterStatus" onchange="filterLicitacoes()">
                             <option value="">Todos os Status</option>
                             <option value="ABERTA">ABERTA</option>
@@ -157,6 +169,17 @@
                     <button class="close-modal" onclick="closeFormModal(true)">✕</button>
                 </div>
                 <div class="form-grid">
+                    <div class="form-group">
+                        <label>Portal</label>
+                        <select id="portalProposta">
+                            <option value="">SELECIONE</option>
+                            <option value="SIADES">SIADES</option>
+                            <option value="TRANSPETRO">TRANSPETRO</option>
+                            <option value="LICITAÇÕES-E">LICITAÇÕES-E</option>
+                            <option value="COMPRASNET">COMPRASNET</option>
+                            <option value="PETRONECT">PETRONECT</option>
+                        </select>
+                    </div>
                     <div class="form-group"><label>Nº Proposta *</label><input type="text" id="numeroProposta" required></div>
                     <div class="form-group"><label>Data *</label><input type="date" id="dataProposta" required></div>
                     <div class="form-group"><label>Hora</label><input type="time" id="horaProposta"></div>
@@ -193,13 +216,14 @@
             </div>
         </div>
 
-        <!-- ── TABELA PRINCIPAL (sem coluna Ações) ────── -->
+        <!-- ── TABELA PRINCIPAL ────── -->
         <div class="card table-card">
             <div style="overflow-x:auto">
-                <table style="min-width:620px">
+                <table style="min-width:700px">
                     <thead>
                         <tr>
                             <th style="width:46px; text-align:center">✓</th>
+                            <th>Portal</th>
                             <th>Nº Proposta</th>
                             <th>Data</th>
                             <th>Hora</th>
