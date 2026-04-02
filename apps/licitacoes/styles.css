@@ -154,16 +154,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ============================================
    BOTÕES DE AÇÃO NA TABELA (EDITAR / EXCLUIR)
    ============================================ */
-.acoes-col {
-    width: 160px;
-    min-width: 160px;
+.actions-cell {
     white-space: nowrap;
-}
-
-.acoes-btns {
-    display: flex;
-    gap: 4px;
-    align-items: center;
+    min-width: 160px;
+    text-align: center;
 }
 
 .action-btn {
@@ -171,8 +165,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     font-size: 0.85rem;
     margin: 0 4px;
     min-width: 70px;
-    background: var(--primary);
-    color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -181,21 +173,21 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
     transition: all 0.3s ease;
 }
 
 .action-btn.edit {
     background: var(--btn-edit);
+    color: white;
 }
 
 .action-btn.delete {
     background: var(--btn-delete);
+    color: white;
 }
 
 .action-btn:hover:not(:disabled) {
     opacity: 0.9;
-    transform: translateY(-1px);
 }
 
 /* SEARCH BAR */
@@ -498,9 +490,7 @@ td.status-col { text-align: center; }
     border: 1px solid rgba(239,68,68,0.4);
 }
 
-/* ============================================
-   PORTAL BADGES
-   ============================================ */
+/* PORTAL BADGES */
 .portal-badge {
     display: inline-block;
     padding: 3px 9px;
@@ -632,9 +622,7 @@ td.status-col { text-align: center; }
     border-radius: 8px; cursor: pointer; font-weight: 600;
 }
 
-/* ============================================
-   MODAL PROPOSTA — largura aumentada + grid 2 colunas
-   ============================================ */
+/* MODAL PROPOSTA — largura aumentada + grid 2 colunas */
 #formModal .modal-content {
     max-width: 640px;
 }
@@ -813,9 +801,7 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
 .col-short { white-space: normal; word-break: break-word; min-width: 60px; max-width: 120px; }
 .col-money { white-space: nowrap; min-width: 90px; }
 
-/* ============================================
-   MENU DE CONTEXTO (CLIQUE DIREITO)
-   ============================================ */
+/* MENU DE CONTEXTO (CLIQUE DIREITO) */
 #itemContextMenu {
     position: fixed;
     z-index: 999999;
@@ -853,8 +839,16 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
     .modal-actions { flex-direction: column-reverse; }
     .modal-actions button { width: 100%; }
     .totals-bar { gap: 1rem; }
-    .acoes-btns { flex-direction: column; gap: 4px; }
-    .action-btn { font-size: 0.72rem; padding: 5px 8px; min-width: unset; }
+    .actions-cell {
+        white-space: normal;
+        min-width: unset;
+    }
+    .action-btn {
+        font-size: 0.72rem;
+        padding: 5px 8px;
+        min-width: unset;
+        margin: 2px;
+    }
 
     /* Modal proposta: volta para 1 coluna em mobile */
     .form-proposta-grid {
