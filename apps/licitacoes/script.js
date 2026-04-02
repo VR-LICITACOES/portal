@@ -3,6 +3,8 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:10000/api'
     : `${window.location.origin}/api`;
 
+const PORTAIS = ['SIADES', 'TRANSPETRO', 'LICITAÇÕES-E', 'COMPRASNET', 'PETRONECT'];
+
 let licitacoes = [];
 let itens = [];
 let currentLicitacaoId = null;
@@ -156,7 +158,6 @@ function updateDisplay() {
 }
 
 // ========== DASHBOARD / STATS ==========
-// "ATENÇÃO" monitora registros cuja data já passou ou é hoje e status ainda é ABERTA
 function updateStats() {
     const total = licitacoes.length;
     const enviadas = licitacoes.filter(l => l.status === 'ENVIADA').length;
@@ -165,7 +166,6 @@ function updateStats() {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    // Atenção = ABERTA e data <= hoje (vencidas ou vencendo hoje)
     const atencao = licitacoes.filter(l => {
         if (l.status !== 'ABERTA') return false;
         if (!l.data) return false;
@@ -190,7 +190,6 @@ function updateStats() {
         }
         badge.textContent = atencao.length;
 
-        // Push notification (apenas uma vez por sessão por grupo de alertas)
         const alertKey = `alerted_${atencao.map(l=>l.id).sort().join('_')}`;
         if (!sessionStorage.getItem(alertKey)) {
             sessionStorage.setItem(alertKey, '1');
@@ -220,15 +219,25 @@ function updateStats() {
 function filterLicitacoes() {
     const search = (document.getElementById('search')?.value || '').toLowerCase();
     const statusFilter = document.getElementById('filterStatus')?.value || '';
+    const portalFilter = document.getElementById('filterPortal')?.value || '';
+
     let filtered = licitacoes.filter(l => {
         const matchSearch = l.numero_proposta.toLowerCase().includes(search) || (l.uf && l.uf.toLowerCase().includes(search));
+
         let matchStatus = true;
         if (statusFilter) {
             const statusExibido = calcularStatusExibido(l);
             matchStatus = statusExibido === statusFilter;
         }
-        return matchSearch && matchStatus;
+
+        let matchPortal = true;
+        if (portalFilter) {
+            matchPortal = (l.portal || '') === portalFilter;
+        }
+
+        return matchSearch && matchStatus && matchPortal;
     });
+
     if (currentDateFilter) {
         filtered = filtered.filter(l => l.data === currentDateFilter);
     }
@@ -252,11 +261,18 @@ function calcularStatusExibido(l) {
     return 'ABERTA';
 }
 
+// Retorna badge HTML para o portal
+function renderPortalBadge(portal) {
+    if (!portal) return '<span class="portal-badge portal-badge-none">—</span>';
+    const cls = 'portal-badge portal-badge-' + portal.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    return `<span class="${cls}">${escapeHtml(portal)}</span>`;
+}
+
 function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => {
@@ -271,7 +287,8 @@ function renderLicitacoes(lista) {
                     <label for="check-${l.id}" class="checkbox-label-styled"></label>
                 </div>
             </td>
-            <td onclick="viewLicitacao('${l.id}')"><strong>${l.numero_proposta}</strong></td>
+            <td onclick="viewLicitacao('${l.id}')">${renderPortalBadge(l.portal)}</td>
+            <td onclick="viewLicitacao('${l.id}')"><strong>${escapeHtml(l.numero_proposta)}</strong></td>
             <td onclick="viewLicitacao('${l.id}')">${formatDateToBR(l.data)}</td>
             <td onclick="viewLicitacao('${l.id}')">${l.hora || '-'}</td>
             <td onclick="viewLicitacao('${l.id}')">${l.uf || '-'}</td>
@@ -287,7 +304,7 @@ function onLicitacaoContextMenu(e, id) {
     e.preventDefault();
     e.stopPropagation();
     contextMenuLicitacaoId = id;
-    closeMainContextMenu(); // remove qualquer menu anterior
+    closeMainContextMenu();
 
     const menu = document.createElement('div');
     menu.id = 'mainContextMenu';
@@ -382,11 +399,13 @@ function openFormModal(editId = null) {
     document.getElementById('formTitle').textContent = editId ? 'Editar Proposta' : 'Nova Proposta';
     if (editId) {
         const l = licitacoes.find(l => l.id === editId);
+        document.getElementById('portalProposta').value = l.portal || '';
         document.getElementById('numeroProposta').value = l.numero_proposta;
         document.getElementById('dataProposta').value = l.data;
         document.getElementById('horaProposta').value = l.hora || '';
         document.getElementById('ufProposta').value = l.uf || '';
     } else {
+        document.getElementById('portalProposta').value = '';
         document.getElementById('numeroProposta').value = '';
         document.getElementById('dataProposta').value = new Date().toISOString().split('T')[0];
         document.getElementById('horaProposta').value = '';
@@ -402,6 +421,7 @@ function closeFormModal(showCancel = true) {
 
 async function salvarLicitacao() {
     const data = {
+        portal: document.getElementById('portalProposta').value || null,
         numero_proposta: document.getElementById('numeroProposta').value.trim(),
         data: document.getElementById('dataProposta').value,
         hora: document.getElementById('horaProposta').value || null,
@@ -492,7 +512,7 @@ function renderVencidosModal(vencidas) {
                 ? '<span style="color:#f97316;font-weight:700;font-size:0.78rem;">HOJE</span>'
                 : '<span style="color:#EF4444;font-weight:700;font-size:0.78rem;">VENCIDA</span>';
             return `<tr onclick="viewLicitacao('${l.id}'); fecharModalVencidos();" style="cursor:pointer;">
-                <td>${l.numero_proposta}</td>
+                <td>${escapeHtml(l.numero_proposta)}</td>
                 <td>${formatDateToBR(l.data)}</td>
                 <td>${l.hora || '-'}</td>
                 <td>${label}</td>
@@ -552,12 +572,11 @@ function normalizeUrl(value) {
 }
 
 // ========== TELA DE ITENS ==========
-// Abertura instantânea: monta a UI imediatamente, carrega dados em background
 function viewLicitacao(id) {
     currentLicitacaoId = id;
-    itens = []; // limpa itens anteriores
-    mostrarTelaItens(); // exibe UI imediatamente (sem aguardar dados)
-    carregarItens(id); // carrega em background
+    itens = [];
+    mostrarTelaItens();
+    carregarItens(id);
 }
 
 function voltar() {
@@ -588,7 +607,7 @@ function mostrarTelaItens() {
                 <div class="header-left">
                     <div>
                         <h1>Itens da Proposta</h1>
-                        <p class="proposta-subtitulo">Proposta Nº ${numeroProposta}</p>
+                        <p class="proposta-subtitulo">Proposta Nº ${escapeHtml(numeroProposta)}</p>
                     </div>
                 </div>
                 <div></div>
@@ -660,7 +679,7 @@ function mostrarTelaItens() {
                             </tr>
                         </thead>
                         <tbody id="itensContainer">
-                            <tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--text-secondary);">Carregando itens...</td></tr>
+                            <tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--text-secondary);">Carregando itens...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -808,7 +827,7 @@ function mostrarTelaItens() {
 async function carregarItens(licitacaoId) {
     if (!isOnline) {
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;">Sistema offline</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:2rem;">Sistema offline</td></tr>';
         return;
     }
     try {
@@ -816,7 +835,6 @@ async function carregarItens(licitacaoId) {
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao carregar itens');
         const raw = await res.json();
-        // Normaliza frete (null -> 0) e prazo_entrega ao carregar da API
         itens = raw.map(i => ({
             ...i,
             frete: (i.frete !== null && i.frete !== undefined) ? Number(i.frete) : 0,
@@ -828,7 +846,7 @@ async function carregarItens(licitacaoId) {
         console.error(err);
         showToast('Erro ao carregar itens', 'error');
         const tbody = document.getElementById('itensContainer');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Erro ao carregar itens</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">Erro ao carregar itens</td></tr>';
     }
 }
 
@@ -860,7 +878,6 @@ function renderItens() {
                </a>`
             : escapeHtml(modeloValue);
 
-        // Recalcular lucro bruto por item descontando frete
         const custoTotal = parseFloat(item.custo_total) || 0;
         const vendaTotal = parseFloat(item.venda_total) || 0;
         const frete = parseFloat(item.frete) || 0;
@@ -902,7 +919,6 @@ function atualizarTotais() {
     const totalCusto = itens.reduce((acc, i) => acc + (parseFloat(i.custo_total) || 0), 0);
     const totalVenda = itens.reduce((acc, i) => acc + (parseFloat(i.venda_total) || 0), 0);
     const totalFrete = itens.reduce((acc, i) => acc + (parseFloat(i.frete) || 0), 0);
-    // Lucro bruto total = soma do lucro de cada item (venda_total - custo_total - frete) por item
     const totalLucroBruto = itens.reduce((acc, i) => {
         const venda = parseFloat(i.venda_total) || 0;
         const custo = parseFloat(i.custo_total) || 0;
@@ -960,10 +976,8 @@ function abrirEdicaoItem(itemId) {
     document.getElementById('itemUnidade').value = item.unidade || 'UN';
     document.getElementById('itemMarca').value = item.marca || '';
     document.getElementById('itemModelo').value = item.modelo || '';
-    // prazo_entrega: suporte ao campo com ambos os nomes possíveis
     const prazo = item.prazo_entrega ?? item.prazoEntrega ?? '';
     document.getElementById('itemPrazoEntrega').value = prazo;
-    // frete: garantir que 0 seja exibido como 0, não vazio
     const freteVal = (item.frete !== null && item.frete !== undefined && item.frete !== '') ? Number(item.frete) : '';
     document.getElementById('itemFrete').value = freteVal;
     document.getElementById('itemCustoUnitario').value = (item.custo_unitario !== null && item.custo_unitario !== undefined) ? item.custo_unitario : '';
@@ -1041,9 +1055,6 @@ async function salvarItem() {
         if (res.status === 401) { sessionStorage.removeItem('licitacoesSession'); mostrarTelaAcessoNegado(); return; }
         if (!res.ok) throw new Error('Erro ao salvar item');
         const saved = await res.json();
-        // Mescla: API define id e campos gerenciados pelo banco,
-        // mas itemData tem prioridade para prazo_entrega, frete e cálculos locais
-        // que podem não ser devolvidos corretamente pela API
         const mergedItem = { ...saved, ...itemData, id: saved.id || editingItemId };
         if (method === 'POST') {
             itens.push(mergedItem);
@@ -1255,12 +1266,6 @@ function gerarMensagemCotacao(tipo) {
     return `${saudacao()}!\nGostaria de pedir, por gentileza, um orçamento para:\n\n${linhas.join('\n\n')}`;
 }
 
-function atualizarPreviewCotacao() {
-    const tipo = document.querySelector('input[name="cotacaoTipo"]:checked')?.value || 'descricao';
-    const preview = document.getElementById('cotacaoPreview');
-    if (preview) preview.value = gerarMensagemCotacao(tipo);
-}
-
 function abrirModalCotacao() {
     if (!itens.length) {
         showToast('Nenhum item cadastrado nesta proposta', 'error');
@@ -1286,7 +1291,7 @@ function abrirModalCotacao() {
     const select = document.getElementById('cotacaoFornecedorSelect');
     if (!select) return;
     select.innerHTML = '<option value="">Selecione a marca...</option>' +
-        marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+        marcas.map(m => `<option value="${m}">${escapeHtml(m)}</option>`).join('');
     selecionarTipoCotacao('descricao');
     const modal = document.getElementById('modalCotacaoItens');
     if (modal) modal.classList.add('show');
@@ -1432,7 +1437,6 @@ window.syncItens = syncItens;
 window.abrirModalCotacao = abrirModalCotacao;
 window.fecharModalCotacao = fecharModalCotacao;
 window.enviarCotacao = enviarCotacao;
-window.atualizarPreviewCotacao = atualizarPreviewCotacao;
 window.selecionarTipoCotacao = selecionarTipoCotacao;
 window.switchItemTab = switchItemTab;
 window.toggleStatus = toggleStatus;
