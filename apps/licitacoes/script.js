@@ -343,7 +343,8 @@ function garantirFormModal() {
                 <button class="close-modal" onclick="closeFormModal()">✕</button>
             </div>
 
-            <div class="form-proposta-grid">
+            <!-- Usando o mesmo .form-grid do modal de itens -->
+            <div class="form-grid">
                 <div class="form-group">
                     <label>Portal</label>
                     <select id="portalProposta">
@@ -355,9 +356,6 @@ function garantirFormModal() {
                     <label>Nº Proposta *</label>
                     <input type="text" id="numeroProposta" placeholder="Ex: 12345/2025">
                 </div>
-            </div>
-
-            <div class="form-proposta-grid">
                 <div class="form-group">
                     <label>Data *</label>
                     <input type="date" id="dataProposta">
@@ -366,9 +364,6 @@ function garantirFormModal() {
                     <label>Hora</label>
                     <input type="time" id="horaProposta">
                 </div>
-            </div>
-
-            <div class="form-proposta-full">
                 <div class="form-group">
                     <label>Local de Entrega</label>
                     <input type="text" id="ufProposta" placeholder="UF ou cidade">
