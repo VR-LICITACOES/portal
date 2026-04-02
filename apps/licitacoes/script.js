@@ -288,16 +288,13 @@ function renderLicitacoes(lista) {
             <td onclick="viewLicitacao('${l.id}')" class="status-col">
                 <span class="status-badge ${badgeClass}">${statusExibido}</span>
             </td>
-            <td class="acoes-col" onclick="event.stopPropagation()">
-                <div class="acoes-btns">
-                    <button class="action-btn edit" onclick="openFormModal('${l.id}')" title="Editar">Editar</button>
-                    <button class="action-btn delete" onclick="openDeleteModal('${l.id}')" title="Excluir">Excluir</button>
-                </div>
+            <td class="actions-cell" onclick="event.stopPropagation()">
+                <button class="action-btn edit" onclick="openFormModal('${l.id}')" title="Editar">Editar</button>
+                <button class="action-btn delete" onclick="openDeleteModal('${l.id}')" title="Excluir">Excluir</button>
             </td>
         </tr>`;
     }).join('');
 }
-
 async function toggleStatus(id) {
     const proposta = licitacoes.find(l => l.id === id);
     if (!proposta) return;
