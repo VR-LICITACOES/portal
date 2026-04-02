@@ -20,9 +20,6 @@ let vencidosPage = 1;
 const VENCIDOS_PAGE_SIZE = 3;
 let currentDateFilter = null;
 
-// Context menu para tabela principal
-let contextMenuLicitacaoId = null;
-
 console.log('🚀 Licitações iniciada');
 console.log('📍 API URL:', API_URL);
 
@@ -33,9 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(checkServerStatus, 15000);
     setInterval(() => { if (isOnline) loadLicitacoes(); }, 30000);
     setInterval(verificarPrazosVencidos, 60000);
-
-    // Fechar context menu ao clicar fora
-    document.addEventListener('click', () => closeMainContextMenu());
 });
 
 // ========== AUTENTICAÇÃO ==========
@@ -272,7 +266,7 @@ function renderLicitacoes(lista) {
     const tbody = document.getElementById('licitacoesContainer');
     if (!tbody) return;
     if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;">Nenhuma proposta encontrada</td></tr>';
         return;
     }
     tbody.innerHTML = lista.map(l => {
@@ -280,7 +274,7 @@ function renderLicitacoes(lista) {
         const statusExibido = calcularStatusExibido(l);
         const badgeClass = statusExibido === 'ENVIADA' ? 'success' : statusExibido === 'ATENÇÃO' ? 'atencao' : 'aberta';
         return `
-        <tr class="${isEnviada ? 'row-enviada' : ''}" oncontextmenu="onLicitacaoContextMenu(event, '${l.id}')">
+        <tr class="${isEnviada ? 'row-enviada' : ''}">
             <td style="text-align:center;" onclick="event.stopPropagation()">
                 <div class="checkbox-wrapper">
                     <input type="checkbox" id="check-${l.id}" class="styled-checkbox" ${isEnviada ? 'checked' : ''} onchange="toggleStatus('${l.id}')">
@@ -295,65 +289,28 @@ function renderLicitacoes(lista) {
             <td onclick="viewLicitacao('${l.id}')" class="status-col">
                 <span class="status-badge ${badgeClass}">${statusExibido}</span>
             </td>
+            <td class="acoes-col" onclick="event.stopPropagation()">
+                <div class="acoes-btns">
+                    <button class="btn-acao btn-acao-editar" onclick="openFormModal('${l.id}')" title="Editar">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Editar
+                    </button>
+                    <button class="btn-acao btn-acao-excluir" onclick="openDeleteModal('${l.id}')" title="Excluir">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6M14 11v6"></path>
+                            <path d="M9 6V4h6v2"></path>
+                        </svg>
+                        Excluir
+                    </button>
+                </div>
+            </td>
         </tr>`;
     }).join('');
-}
-
-// ========== CONTEXT MENU — TABELA PRINCIPAL ==========
-function onLicitacaoContextMenu(e, id) {
-    e.preventDefault();
-    e.stopPropagation();
-    contextMenuLicitacaoId = id;
-    closeMainContextMenu();
-
-    const menu = document.createElement('div');
-    menu.id = 'mainContextMenu';
-    menu.innerHTML = `
-        <div class="context-menu-item" onclick="editLicitacaoCtx()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Editar proposta
-        </div>
-        <div class="context-menu-item danger" onclick="openDeleteModalCtx()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6l-1 14H6L5 6"></path>
-                <path d="M10 11v6M14 11v6"></path>
-                <path d="M9 6V4h6v2"></path>
-            </svg>
-            Excluir proposta
-        </div>
-    `;
-    document.body.appendChild(menu);
-
-    const x = Math.min(e.clientX, window.innerWidth - 200);
-    const y = Math.min(e.clientY, window.innerHeight - 100);
-    menu.style.left = x + 'px';
-    menu.style.top = y + 'px';
-
-    setTimeout(() => {
-        document.addEventListener('click', closeMainContextMenu, { once: true });
-        document.addEventListener('contextmenu', closeMainContextMenu, { once: true });
-    }, 10);
-}
-
-function closeMainContextMenu() {
-    const menu = document.getElementById('mainContextMenu');
-    if (menu) menu.remove();
-}
-
-function editLicitacaoCtx() {
-    const id = contextMenuLicitacaoId;
-    closeMainContextMenu();
-    if (id) openFormModal(id);
-}
-
-function openDeleteModalCtx() {
-    const id = contextMenuLicitacaoId;
-    closeMainContextMenu();
-    if (id) openDeleteModal(id);
 }
 
 async function toggleStatus(id) {
@@ -585,7 +542,6 @@ function voltar() {
     currentLicitacaoId = null;
     itens = [];
     closeContextMenu();
-    closeMainContextMenu();
 }
 
 function mostrarTelaItens() {
@@ -1447,7 +1403,3 @@ window.closeContextMenu = closeContextMenu;
 window.abrirModalExclusaoLote = abrirModalExclusaoLote;
 window.fecharModalExclusaoLote = fecharModalExclusaoLote;
 window.confirmarExclusaoLote = confirmarExclusaoLote;
-window.onLicitacaoContextMenu = onLicitacaoContextMenu;
-window.closeMainContextMenu = closeMainContextMenu;
-window.editLicitacaoCtx = editLicitacaoCtx;
-window.openDeleteModalCtx = openDeleteModalCtx;
