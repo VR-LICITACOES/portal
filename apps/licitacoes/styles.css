@@ -512,42 +512,36 @@ td.status-col { text-align: center; }
     text-transform: uppercase;
 }
 
-/* Sem portal definido */
 .portal-badge-none {
     background: transparent;
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
 }
 
-/* SIADES — azul índigo */
 .portal-badge-siades {
     background: rgba(99, 102, 241, 0.12);
     color: #6366f1;
     border: 1px solid rgba(99, 102, 241, 0.35);
 }
 
-/* TRANSPETRO — âmbar/laranja petróleo */
 .portal-badge-transpetro {
     background: rgba(234, 88, 12, 0.12);
     color: #ea580c;
     border: 1px solid rgba(234, 88, 12, 0.35);
 }
 
-/* LICITAÇÕES-E — verde esmeralda */
 .portal-badge-licita--es-e {
     background: rgba(16, 185, 129, 0.12);
     color: #059669;
     border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
-/* COMPRASNET — azul royal */
 .portal-badge-comprasnet {
     background: rgba(37, 99, 235, 0.12);
     color: #2563eb;
     border: 1px solid rgba(37, 99, 235, 0.35);
 }
 
-/* PETRONECT — cinza ardósia */
 .portal-badge-petronect {
     background: rgba(71, 85, 105, 0.12);
     color: #475569;
@@ -636,6 +630,42 @@ td.status-col { text-align: center; }
     margin: 0; min-width: 120px;
     padding: 10px 20px; font-size: 0.9rem;
     border-radius: 8px; cursor: pointer; font-weight: 600;
+}
+
+/* ============================================
+   MODAL PROPOSTA — largura aumentada + grid 2 colunas
+   ============================================ */
+#formModal .modal-content {
+    max-width: 640px;
+}
+
+.form-proposta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-proposta-full {
+    margin-bottom: 1rem;
+}
+
+.form-proposta-grid .form-group,
+.form-proposta-full .form-group {
+    margin-bottom: 0;
+}
+
+.form-proposta-grid label,
+.form-proposta-full label {
+    font-size: 0.85rem;
+}
+
+.form-proposta-grid input,
+.form-proposta-grid select,
+.form-proposta-full input,
+.form-proposta-full select {
+    padding: 9px 12px;
+    font-size: 0.9rem;
 }
 
 /* FORMULÁRIOS */
@@ -785,7 +815,6 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
 
 /* ============================================
    MENU DE CONTEXTO (CLIQUE DIREITO)
-   — itens apenas
    ============================================ */
 #itemContextMenu {
     position: fixed;
@@ -826,4 +855,9 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
     .totals-bar { gap: 1rem; }
     .acoes-btns { flex-direction: column; gap: 4px; }
     .action-btn { font-size: 0.72rem; padding: 5px 8px; min-width: unset; }
+
+    /* Modal proposta: volta para 1 coluna em mobile */
+    .form-proposta-grid {
+        grid-template-columns: 1fr;
+    }
 }
