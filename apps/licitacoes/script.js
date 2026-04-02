@@ -295,6 +295,7 @@ function renderLicitacoes(lista) {
         </tr>`;
     }).join('');
 }
+
 async function toggleStatus(id) {
     const proposta = licitacoes.find(l => l.id === id);
     if (!proposta) return;
@@ -331,6 +332,8 @@ async function toggleStatus(id) {
         if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
     }
 }
+
+// ========== CRUD LICITAÇÕES ==========
 function garantirFormModal() {
     if (document.getElementById('formModal')) return;
     const modal = document.createElement('div');
@@ -342,8 +345,6 @@ function garantirFormModal() {
                 <h3 class="modal-title" id="formTitle">Nova Proposta</h3>
                 <button class="close-modal" onclick="closeFormModal()">✕</button>
             </div>
-
-            <!-- Usando o mesmo .form-grid do modal de itens -->
             <div class="form-grid">
                 <div class="form-group">
                     <label>Portal</label>
@@ -369,7 +370,6 @@ function garantirFormModal() {
                     <input type="text" id="ufProposta" placeholder="UF ou cidade">
                 </div>
             </div>
-
             <div class="modal-actions">
                 <button class="success" onclick="salvarLicitacao()">Salvar</button>
                 <button class="danger" onclick="closeFormModal()">Cancelar</button>
@@ -679,7 +679,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- ===== MODAL: ADICIONAR / EDITAR ITEM ===== -->
+        <!-- MODAL: ADICIONAR / EDITAR ITEM -->
         <div class="modal-overlay" id="itemModal">
             <div class="modal-content" style="max-width:900px">
                 <div class="modal-header">
@@ -738,7 +738,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- ===== MODAL: COTAÇÃO ===== -->
+        <!-- MODAL: COTAÇÃO -->
         <div class="modal-overlay" id="modalCotacaoItens">
             <div class="modal-content" style="max-width:520px">
                 <div class="modal-header">
@@ -779,7 +779,7 @@ function mostrarTelaItens() {
             </div>
         </div>
 
-        <!-- ===== MODAL: EXCLUSÃO EM LOTE ===== -->
+        <!-- MODAL: EXCLUSÃO EM LOTE -->
         <div class="modal-overlay" id="modalExclusaoLote">
             <div class="modal-content" style="max-width:440px">
                 <div class="modal-header">
@@ -885,7 +885,7 @@ function renderItens() {
             <td class="col-money">${formatMoney(item.venda_total)}</td>
             <td class="col-money">${formatMoney(frete)}</td>
             <td class="col-money" style="color:${lucroBruto >= 0 ? 'var(--success-color)' : 'var(--btn-delete)'};">${formatMoney(lucroBruto)}</td>
-         </tr>`;
+          </tr>`;
     }).join('');
     atualizarTotais();
 }
