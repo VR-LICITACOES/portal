@@ -546,7 +546,7 @@ td.status-col { text-align: center; }
     .portal-badge-petronect   { background: rgba(71,85,105,0.22);  color: #cbd5e1; border-color: rgba(71,85,105,0.4);  }
 }
 
-/* MODAIS */
+/* MODAIS GERAIS */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -622,11 +622,12 @@ td.status-col { text-align: center; }
     border-radius: 8px; cursor: pointer; font-weight: 600;
 }
 
-/* MODAL PROPOSTA — largura aumentada + grid 2 colunas */
+/* MODAL PROPOSTA (igual ao modal de itens, sem abas) */
 #formModal .modal-content {
     max-width: 640px;
 }
 
+/* Grid usado tanto no modal de proposta quanto no de itens */
 .form-proposta-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -656,7 +657,7 @@ td.status-col { text-align: center; }
     font-size: 0.9rem;
 }
 
-/* FORMULÁRIOS */
+/* FORMULÁRIOS GERAIS (itens também usam) */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -708,7 +709,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 .styled-checkbox:checked + .checkbox-label-styled { background: var(--success-color); border-color: var(--success-color); }
 .styled-checkbox:checked + .checkbox-label-styled::after { content: '✓'; color: white; font-size: 1rem; font-weight: 700; }
 
-/* ABAS */
+/* ABAS (usado apenas no modal de itens) */
 .tabs-container { margin-bottom: 1.5rem; }
 .tabs-nav {
     display: flex; gap: 0.5rem;
@@ -849,8 +850,6 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
         min-width: unset;
         margin: 2px;
     }
-
-    /* Modal proposta: volta para 1 coluna em mobile */
     .form-proposta-grid {
         grid-template-columns: 1fr;
     }
