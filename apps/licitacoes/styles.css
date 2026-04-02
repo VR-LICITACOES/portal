@@ -565,7 +565,7 @@ td.status-col { text-align: center; }
     background: var(--bg-card);
     border-radius: 16px;
     padding: 2rem;
-    max-width: 900px;  /* mesmo do modal de itens */
+    max-width: 900px;
     width: 95%;
     max-height: 90vh;
     overflow-y: auto;
@@ -629,7 +629,7 @@ td.status-col { text-align: center; }
     gap: 1.2rem;
     margin-bottom: 1.5rem;
 }
-.form-group { margin-bottom: 0; }  /* ajuste para não duplicar espaçamento */
+.form-group { margin-bottom: 0; }
 label {
     display: block;
     margin-bottom: 8px;
