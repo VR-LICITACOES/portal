@@ -701,6 +701,7 @@ function mostrarTelaItens() {
                                     <option value="MT">MT</option>
                                     <option value="PCT">PCT</option>
                                     <option value="KG">KG</option>
+                                    <option value="LT">LT</option>
                                 </select>
                             </div>
                             <div class="form-group"><label>Marca</label><input type="text" id="itemMarca"></div>
