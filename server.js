@@ -190,13 +190,13 @@ app.get('/api/licitacoes', authenticate, async (req, res) => {
 
 app.post('/api/licitacoes', authenticate, async (req, res) => {
     try {
-        const { numero_proposta, data, hora, uf, status = 'ABERTA' } = req.body;
+        const { numero_proposta, data, hora, uf, portal, status = 'ABERTA' } = req.body;
         if (!numero_proposta || !data) {
             return res.status(400).json({ error: 'Número e data obrigatórios' });
         }
         const { data: inserted, error } = await supabase
             .from('licitacoes')
-            .insert({ numero_proposta, data, hora, uf, status })
+            .insert({ numero_proposta, data, hora, uf, portal: portal || null, status })
             .select();
         if (error) throw error;
         res.status(201).json(inserted[0]);
@@ -210,6 +210,8 @@ app.put('/api/licitacoes/:id', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
+        // Garante que portal seja aceito (null se não informado)
+        if (!('portal' in updates)) updates.portal = null;
         const { data, error } = await supabase
             .from('licitacoes')
             .update(updates)
