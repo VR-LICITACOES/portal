@@ -331,10 +331,6 @@ async function toggleStatus(id) {
         if (checkbox) checkbox.checked = (proposta.status === 'ENVIADA');
     }
 }
-
-// ========== CRUD LICITAÇÕES ==========
-
-// Injeta o HTML do modal de proposta no DOM (chamado uma vez)
 function garantirFormModal() {
     if (document.getElementById('formModal')) return;
     const modal = document.createElement('div');
