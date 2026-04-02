@@ -565,7 +565,7 @@ td.status-col { text-align: center; }
     background: var(--bg-card);
     border-radius: 16px;
     padding: 2rem;
-    max-width: 900px;
+    max-width: 900px;  /* mesmo do modal de itens */
     width: 95%;
     max-height: 90vh;
     overflow-y: auto;
@@ -622,50 +622,21 @@ td.status-col { text-align: center; }
     border-radius: 8px; cursor: pointer; font-weight: 600;
 }
 
-/* MODAL PROPOSTA (igual ao modal de itens, sem abas) */
-#formModal .modal-content {
-    max-width: 640px;
-}
-
-/* Grid usado tanto no modal de proposta quanto no de itens */
-.form-proposta-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.form-proposta-full {
-    margin-bottom: 1rem;
-}
-
-.form-proposta-grid .form-group,
-.form-proposta-full .form-group {
-    margin-bottom: 0;
-}
-
-.form-proposta-grid label,
-.form-proposta-full label {
-    font-size: 0.85rem;
-}
-
-.form-proposta-grid input,
-.form-proposta-grid select,
-.form-proposta-full input,
-.form-proposta-full select {
-    padding: 9px 12px;
-    font-size: 0.9rem;
-}
-
-/* FORMULÁRIOS GERAIS (itens também usam) */
+/* FORMULÁRIOS (mesmo grid para todos os modais) */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.2rem;
     margin-bottom: 1.5rem;
 }
-.form-group { margin-bottom: 1rem; }
-label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-primary); font-size: 0.9rem; }
+.form-group { margin-bottom: 0; }  /* ajuste para não duplicar espaçamento */
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
 input, select, textarea {
     width: 100%;
     padding: 12px 16px;
@@ -849,8 +820,5 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
         padding: 5px 8px;
         min-width: unset;
         margin: 2px;
-    }
-    .form-proposta-grid {
-        grid-template-columns: 1fr;
     }
 }
