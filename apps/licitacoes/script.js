@@ -255,7 +255,6 @@ function calcularStatusExibido(l) {
     return 'ABERTA';
 }
 
-// Retorna badge HTML para o portal
 function renderPortalBadge(portal) {
     if (!portal) return '<span class="portal-badge portal-badge-none">—</span>';
     const cls = 'portal-badge portal-badge-' + portal.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -337,7 +336,63 @@ async function toggleStatus(id) {
 }
 
 // ========== CRUD LICITAÇÕES ==========
+
+// Injeta o HTML do modal de proposta no DOM (chamado uma vez)
+function garantirFormModal() {
+    if (document.getElementById('formModal')) return;
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'formModal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="formTitle">Nova Proposta</h3>
+                <button class="close-modal" onclick="closeFormModal()">✕</button>
+            </div>
+
+            <div class="form-proposta-grid">
+                <div class="form-group">
+                    <label>Portal</label>
+                    <select id="portalProposta">
+                        <option value="">— Sem portal —</option>
+                        ${PORTAIS.map(p => `<option value="${p}">${p}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nº Proposta *</label>
+                    <input type="text" id="numeroProposta" placeholder="Ex: 12345/2025">
+                </div>
+            </div>
+
+            <div class="form-proposta-grid">
+                <div class="form-group">
+                    <label>Data *</label>
+                    <input type="date" id="dataProposta">
+                </div>
+                <div class="form-group">
+                    <label>Hora</label>
+                    <input type="time" id="horaProposta">
+                </div>
+            </div>
+
+            <div class="form-proposta-full">
+                <div class="form-group">
+                    <label>Local de Entrega</label>
+                    <input type="text" id="ufProposta" placeholder="UF ou cidade">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="success" onclick="salvarLicitacao()">Salvar</button>
+                <button class="danger" onclick="closeFormModal()">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
 function openFormModal(editId = null) {
+    garantirFormModal();
     editingId = editId;
     document.getElementById('formTitle').textContent = editId ? 'Editar Proposta' : 'Nova Proposta';
     if (editId) {
