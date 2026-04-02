@@ -151,6 +151,66 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .btn-icon:hover { background: var(--input-bg); color: var(--primary); }
 
+/* ============================================
+   BOTÕES DE AÇÃO NA TABELA (EDITAR / EXCLUIR)
+   ============================================ */
+.acoes-col {
+    width: 160px;
+    min-width: 160px;
+    white-space: nowrap;
+}
+
+.acoes-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-acao {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.btn-acao-editar {
+    background: var(--btn-edit);
+    color: #ffffff;
+}
+.btn-acao-editar:hover {
+    background: #4B5563;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(107, 114, 128, 0.4);
+}
+.btn-acao-editar:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.btn-acao-excluir {
+    background: var(--btn-delete);
+    color: #ffffff;
+}
+.btn-acao-excluir:hover {
+    background: #DC2626;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(239, 68, 68, 0.4);
+}
+.btn-acao-excluir:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
 /* SEARCH BAR */
 .search-bar-wrapper { margin-bottom: 0.5rem; }
 .search-bar {
@@ -406,7 +466,6 @@ td {
 tbody tr {
     background: var(--bg-card);
     transition: background 0.2s ease;
-    cursor: pointer;
 }
 tbody tr:nth-child(even) { background: var(--table-stripe); }
 tbody tr:hover { background: var(--table-hover); }
@@ -739,11 +798,9 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
 
 /* ============================================
    MENU DE CONTEXTO (CLIQUE DIREITO)
-   — licitações e itens
+   — itens apenas
    ============================================ */
-#itemContextMenu,
-#licitacaoContextMenu,
-#mainContextMenu {
+#itemContextMenu {
     position: fixed;
     z-index: 999999;
     background: var(--bg-card);
@@ -766,8 +823,6 @@ td:first-child, th:first-child { min-width: 50px; width: 50px; }
 .context-menu-item.danger { color: var(--btn-delete); }
 .context-menu-item.danger:hover { background: rgba(239,68,68,0.08); }
 
-tbody tr[oncontextmenu] { cursor: context-menu; }
-
 @media (max-width: 768px) {
     .container { padding: 0 1rem 5rem 1rem; margin: 1rem auto; }
     .header { flex-direction: column; align-items: stretch; }
@@ -782,4 +837,6 @@ tbody tr[oncontextmenu] { cursor: context-menu; }
     .modal-actions { flex-direction: column-reverse; }
     .modal-actions button { width: 100%; }
     .totals-bar { gap: 1rem; }
+    .acoes-btns { flex-direction: column; gap: 4px; }
+    .btn-acao { font-size: 0.72rem; padding: 5px 8px; }
 }
